@@ -1,0 +1,26 @@
+# Stage 1: Build
+FROM oven/bun:latest AS builder
+WORKDIR /app
+
+# Install dependencies (including devDeps for types/build tools)
+COPY package.json bun.lock ./ 
+RUN bun install --frozen-lockfile
+
+# Copy source and compile into a single binary
+COPY . .
+# --compile: bundles everything into one executable
+# --minify: reduces the size of the bundled JS
+# --target=bun-linux-x64: builds for glibc-based distroless runtime
+RUN bun build ./src/index.ts --compile --minify --target=bun-linux-x64 --outfile server
+
+# Stage 2: Final Release
+# We use a slim debian or alpine base because the binary is self-contained
+FROM gcr.io/distroless/cc-debian12 AS release
+WORKDIR /app
+
+# Copy ONLY the compiled binary from the builder
+COPY --from=builder /app/server /app/server
+
+# Run the binary directly
+EXPOSE 3000
+CMD ["/app/server"]

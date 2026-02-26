@@ -12,10 +12,6 @@ const getClient = () => {
 		throw new Error("DATABASE_URL is not defined in environment variables.");
 	}
 
-	logger.info("Connecting to database with connection string:", {
-		connectionString,
-	});
-
 	return postgres(connectionString);
 };
 
