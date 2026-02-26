@@ -1,13 +1,20 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1772117587449,
-      "tag": "0000_flaky_wolverine",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1772117587449,
+			"tag": "0000_flaky_wolverine",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1772118843177,
+			"tag": "0001_secret_lord_hawal",
+			"breakpoints": true
+		}
+	]
 }
