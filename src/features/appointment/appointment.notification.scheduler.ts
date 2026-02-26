@@ -11,8 +11,10 @@ const APPOINTMENT_NOTIFICATION_QUEUE = "appointment-notifications";
 const HOUR_IN_MS = 60 * 60 * 1000;
 
 const NOTIFICATION_WINDOWS = [
-	{ type: "24h", offsetInMs: 24 * HOUR_IN_MS },
+	{ type: "1m", offsetInMs: 1 * 60 * 1000 },
+	{ type: "5m", offsetInMs: 5 * 60 * 1000 },
 	{ type: "1h", offsetInMs: HOUR_IN_MS },
+	{ type: "24h", offsetInMs: 24 * HOUR_IN_MS },
 ] as const;
 
 type NotificationType = (typeof NOTIFICATION_WINDOWS)[number]["type"];
@@ -96,11 +98,32 @@ export class BullMqAppointmentNotificationScheduler
 	) {
 		const jobId = createJobId(appointment.id, notificationType);
 		const existingJob = await this.queue.getJob(jobId);
-		const delay = appointment.startDate.getTime() - Date.now() - offsetInMs;
+
+		const delay =
+			new Date(appointment.startDate).getTime() - Date.now() - offsetInMs;
 
 		if (existingJob) {
 			await existingJob.remove();
 		}
+
+		if (delay <= 0) {
+			return logger.warn(
+				"Skipping scheduling notification because it's in the past",
+				{
+					appointmentId: appointment.id,
+					notificationType,
+				},
+			);
+		}
+
+		logger.debug(
+			`Scheduling notification to be sent in ${delay / 1000} seconds`,
+			{
+				appointmentId: appointment.id,
+				notificationType,
+				startDate: appointment.startDate,
+			},
+		);
 
 		await this.queue.add(
 			"send-whatsapp-notification",
@@ -191,7 +214,7 @@ export function startAppointmentNotificationWorker() {
 	const worker = new Worker<AppointmentNotificationJob>(
 		APPOINTMENT_NOTIFICATION_QUEUE,
 		async (job) => {
-			console.log("Agendado pro zap", job.data);
+			logger.info("Agendado pro zap", job.data);
 		},
 		{
 			connection: createRedisConnection(),
