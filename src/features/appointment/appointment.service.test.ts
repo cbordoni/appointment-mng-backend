@@ -1,12 +1,38 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-
+import { ok } from "neverthrow";
 import { ValidationError } from "@/common/errors";
-
+import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler";
 import { MockAppointmentRepository } from "./appointment.repository.mock";
 import { AppointmentService } from "./appointment.service";
 import type { CreateAppointmentInput } from "./appointment.types";
 
 const BASE_USER_ID = "00000000-0000-0000-0000-000000000001";
+
+class MockAppointmentNotificationScheduler
+	implements IAppointmentNotificationScheduler
+{
+	public scheduledAppointmentIds: string[] = [];
+	public rescheduledAppointmentIds: string[] = [];
+	public clearedAppointmentIds: string[] = [];
+
+	async scheduleForAppointment(appointment: { id: string }) {
+		this.scheduledAppointmentIds.push(appointment.id);
+
+		return ok(undefined);
+	}
+
+	async rescheduleForAppointment(appointment: { id: string }) {
+		this.rescheduledAppointmentIds.push(appointment.id);
+
+		return ok(undefined);
+	}
+
+	async clearForAppointment(appointmentId: string) {
+		this.clearedAppointmentIds.push(appointmentId);
+
+		return ok(undefined);
+	}
+}
 
 const makeAppointment = (
 	overrides: Partial<CreateAppointmentInput> = {},
@@ -21,10 +47,12 @@ const makeAppointment = (
 describe("AppointmentService", () => {
 	let repository: MockAppointmentRepository;
 	let service: AppointmentService;
+	let notificationScheduler: MockAppointmentNotificationScheduler;
 
 	beforeEach(() => {
 		repository = new MockAppointmentRepository();
-		service = new AppointmentService(repository);
+		notificationScheduler = new MockAppointmentNotificationScheduler();
+		service = new AppointmentService(repository, notificationScheduler);
 		repository.setUsersMap(new Map([[BASE_USER_ID, "John Doe"]]));
 	});
 
@@ -197,6 +225,9 @@ describe("AppointmentService", () => {
 				expect(result.value.observation).toBe("First session");
 				expect(result.value.userId).toBe(BASE_USER_ID);
 				expect(result.value.id).toBeDefined();
+				expect(notificationScheduler.scheduledAppointmentIds).toEqual([
+					result.value.id,
+				]);
 			}
 		});
 
@@ -270,6 +301,9 @@ describe("AppointmentService", () => {
 
 				if (result.isOk()) {
 					expect(result.value.title).toBe("Updated Session");
+					expect(notificationScheduler.rescheduledAppointmentIds).toEqual([
+						created.value.id,
+					]);
 				}
 			}
 		});
@@ -355,6 +389,9 @@ describe("AppointmentService", () => {
 				const result = await service.deleteAppointment(created.value.id);
 
 				expect(result.isOk()).toBe(true);
+				expect(notificationScheduler.clearedAppointmentIds).toEqual([
+					created.value.id,
+				]);
 
 				const getResult = await service.getAppointmentById(created.value.id);
 				expect(getResult.isErr()).toBe(true);

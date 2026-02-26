@@ -10,6 +10,10 @@ import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
 import type { Appointment } from "@/db/schema";
 
+import {
+	type IAppointmentNotificationScheduler,
+	NoopAppointmentNotificationScheduler,
+} from "./appointment.notification.scheduler";
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
 	AppointmentWithUser,
@@ -19,7 +23,10 @@ import type {
 } from "./appointment.types";
 
 export class AppointmentService {
-	constructor(private readonly repository: IAppointmentRepository) {}
+	constructor(
+		private readonly repository: IAppointmentRepository,
+		private readonly notificationScheduler: IAppointmentNotificationScheduler = new NoopAppointmentNotificationScheduler(),
+	) {}
 
 	private validateDates(
 		startDate: string | Date,
@@ -112,9 +119,25 @@ export class AppointmentService {
 			return err(datesValidation.error);
 		}
 
-		const result = await this.repository.create(data);
+		const createResult = await this.repository.create(data);
 
-		return result.map((appointment) => {
+		if (createResult.isErr()) {
+			return err(createResult.error);
+		}
+
+		const scheduleResult =
+			await this.notificationScheduler.scheduleForAppointment(
+				createResult.value,
+			);
+
+		if (scheduleResult.isErr()) {
+			logger.warn("Failed to schedule appointment notifications", {
+				appointmentId: createResult.value.id,
+				error: scheduleResult.error.message,
+			});
+		}
+
+		return ok(createResult.value).map((appointment) => {
 			logger.info("Appointment created successfully", { id: appointment.id });
 			return appointment;
 		});
@@ -150,9 +173,25 @@ export class AppointmentService {
 			}
 		}
 
-		const result = await this.repository.update(id, data);
+		const updateResult = await this.repository.update(id, data);
 
-		return result.map((appointment) => {
+		if (updateResult.isErr()) {
+			return err(updateResult.error);
+		}
+
+		const scheduleResult =
+			await this.notificationScheduler.rescheduleForAppointment(
+				updateResult.value,
+			);
+
+		if (scheduleResult.isErr()) {
+			logger.warn("Failed to reschedule appointment notifications", {
+				appointmentId: updateResult.value.id,
+				error: scheduleResult.error.message,
+			});
+		}
+
+		return ok(updateResult.value).map((appointment) => {
 			logger.info("Appointment updated successfully", { id });
 			return appointment;
 		});
@@ -163,9 +202,23 @@ export class AppointmentService {
 	): Promise<Result<void, NotFoundError | DatabaseError>> {
 		logger.debug("Deleting appointment", { id });
 
-		const result = await this.repository.delete(id);
+		const deleteResult = await this.repository.delete(id);
 
-		return result.map(() => {
+		if (deleteResult.isErr()) {
+			return err(deleteResult.error);
+		}
+
+		const clearResult =
+			await this.notificationScheduler.clearForAppointment(id);
+
+		if (clearResult.isErr()) {
+			logger.warn("Failed to clear appointment notifications", {
+				appointmentId: id,
+				error: clearResult.error.message,
+			});
+		}
+
+		return ok(undefined).map(() => {
 			logger.info("Appointment deleted successfully", { id });
 			return undefined;
 		});

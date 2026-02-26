@@ -3,6 +3,7 @@ import { Elysia, t } from "elysia";
 import { PaginationQuerySchema } from "@/common/types";
 
 import { AppointmentController } from "./appointment.controller";
+import { BullMqAppointmentNotificationScheduler } from "./appointment.notification.scheduler";
 import { AppointmentRepository } from "./appointment.repository";
 import { AppointmentService } from "./appointment.service";
 import {
@@ -13,7 +14,8 @@ import {
 } from "./appointment.types";
 
 const repository = new AppointmentRepository();
-const service = new AppointmentService(repository);
+const notificationScheduler = new BullMqAppointmentNotificationScheduler();
+const service = new AppointmentService(repository, notificationScheduler);
 const controller = new AppointmentController(service);
 
 export const appointmentRoutes = new Elysia({ prefix: "/appointments" })

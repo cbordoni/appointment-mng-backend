@@ -1,8 +1,12 @@
 import { logger } from "@/common/logger";
 import { syncDatabase } from "@/db";
+import { startAppointmentNotificationWorker } from "@/features/appointment/appointment.notification.scheduler";
+
 import { app } from "./app";
 
 const PORT = Bun.env.PORT || 3000;
+
+startAppointmentNotificationWorker();
 
 // Sync database if DB_SYNC flag is set
 if (Bun.env.DB_SYNC === "true") {

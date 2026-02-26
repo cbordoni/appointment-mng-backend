@@ -8,6 +8,7 @@
 		"db:migrate": "bun --env-file=.env.local run drizzle-kit migrate",
 		"db:studio": "bun --env-file=.env.local run drizzle-kit studio",
 		"db:push": "bun --env-file=.env.local run drizzle-kit push",
+		"db:seed": "bun --env-file=.env.local run src/db/seed.ts",
 		"lint": "biome lint --write .",
 		"format": "biome format --write .",
 		"check": "biome check --write ."
@@ -15,8 +16,10 @@
 	"dependencies": {
 		"@elysiajs/cors": "^1.4.1",
 		"@elysiajs/openapi": "^1.4.14",
+		"bullmq": "^5.70.1",
 		"drizzle-orm": "^0.45.1",
 		"elysia": "latest",
+		"ioredis": "^5.9.3",
 		"neverthrow": "^8.2.0",
 		"postgres": "^3.4.8"
 	},

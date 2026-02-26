@@ -15,3 +15,9 @@ bun run dev
 ```
 
 Open http://localhost:3000/ with your browser to see the result.
+
+## Database
+To populate the database with initial data run:
+```bash
+bun run db:seed
+```
