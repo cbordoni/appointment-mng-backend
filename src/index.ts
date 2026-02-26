@@ -1,7 +1,31 @@
-import { Elysia } from "elysia";
+import { logger } from "@/common/logger";
+import { syncDatabase } from "@/db";
+import { app } from "./app";
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+const PORT = Bun.env.PORT || 3000;
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+// Sync database if DB_SYNC flag is set
+if (Bun.env.DB_SYNC === "true") {
+	logger.info("Syncing database...");
+
+	await syncDatabase().then(
+		() => {
+			logger.info("Database synced successfully");
+		},
+		(e) => {
+			logger.error("Failed to sync database", {
+				error: e instanceof Error ? e.message : String(e),
+			});
+
+			process.exit(1);
+		},
+	);
+}
+
+app.listen(PORT);
+
+logger.info("Server started", {
+	hostname: app.server?.hostname,
+	port: app.server?.port,
+	environment: Bun.env.NODE_ENV || "development",
+});
