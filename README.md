@@ -1,23 +1,68 @@
-# Elysia with Bun runtime
+# Appointment Management Backend
 
-Projeto pra agendar doidinhos 🤪
+Projeto de gerenciamento de agendamentos com Bun + Elysia.
 
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
+## Pré-requisitos
+
+- Bun instalado
+- Docker e Docker Compose disponíveis
+
+## Inicialização do ambiente com Docker Compose
+
+Suba os serviços de infraestrutura (Postgres e Redis):
+
 ```bash
-bun create elysia ./elysia-example
+docker compose up -d
 ```
 
-## Development
-To start the development server run:
+Para parar os serviços:
+
+```bash
+docker compose down
+```
+
+## Instalação e execução da API
+
+Instale as dependências:
+
+```bash
+bun install
+```
+
+Inicie a aplicação em desenvolvimento:
+
 ```bash
 bun run dev
 ```
 
-Open http://localhost:3000/ with your browser to see the result.
+A API ficará disponível em `http://localhost:3000`.
 
-## Database
-To populate the database with initial data run:
+## Banco de dados e migrations
+
+Com o Postgres já iniciado via Docker Compose, execute as migrations:
+
+```bash
+bun run db:migrate
+```
+
+Se quiser popular o banco com dados iniciais:
+
 ```bash
 bun run db:seed
 ```
+
+Comandos úteis de banco:
+
+```bash
+bun run db:generate
+bun run db:push
+bun run db:studio
+```
+
+## OpenAPI (`/docs`)
+
+A documentação OpenAPI/Swagger da API fica disponível em:
+
+- `http://localhost:3000/docs`
+
+Use essa rota para visualizar os endpoints, payloads e respostas esperadas de forma interativa.
