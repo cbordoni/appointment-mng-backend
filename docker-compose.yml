@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: juka-terapeuta-postgres
+    container_name: appointment-mng-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: juka_terapeuta
+      POSTGRES_DB: appointment_db
     ports:
       - "5432:5432"
     volumes:
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: juka-terapeuta-redis
+    container_name: appointment-mng-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
