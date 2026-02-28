@@ -7,22 +7,21 @@ import * as schema from "@/db/schema";
 
 const connectionString = Bun.env.DATABASE_URL;
 
-const getClient = () => {
+const getClient = <T extends Record<string, postgres.PostgresType> = {}>(
+	options: postgres.Options<T> = {},
+) => {
 	if (!connectionString) {
 		throw new Error("DATABASE_URL is not defined in environment variables.");
 	}
 
-	return postgres(connectionString);
+	return postgres(connectionString, options);
 };
 
 export const db = drizzle(getClient(), { schema });
 
 export async function syncDatabase(): Promise<void> {
-	if (!connectionString) {
-		throw new Error("DATABASE_URL is not defined in environment variables.");
-	}
+	const migrationClient = getClient({ max: 1 });
 
-	const migrationClient = postgres(connectionString, { max: 1 });
 	try {
 		logger.info("Running database migrations...");
 		await migrate(drizzle(migrationClient), { migrationsFolder: "./drizzle" });
