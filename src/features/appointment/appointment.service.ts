@@ -1,19 +1,17 @@
-import { err, ok, type Result } from "neverthrow";
+import { err, ok } from "neverthrow";
 
-import {
-	type DatabaseError,
-	type NotFoundError,
-	ValidationError,
-} from "@/common/errors";
+import { ValidationError } from "@/common/errors";
 import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
+import type {
+	AsyncDomainResult,
+	DomainResult,
+} from "@/common/types/database-result";
 import type { Appointment } from "@/db/schema";
 
-import {
-	type IAppointmentNotificationScheduler,
-	NoopAppointmentNotificationScheduler,
-} from "./appointment.notification.scheduler";
+import { NoopAppointmentNotificationScheduler } from "./appointment.notification.scheduler";
+import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler.interface";
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
 	AppointmentWithUser,
@@ -31,7 +29,7 @@ export class AppointmentService {
 	private validateDates(
 		startDate: string | Date,
 		endDate: string | Date,
-	): Result<void, ValidationError> {
+	): DomainResult<void> {
 		const start = new Date(startDate);
 		const end = new Date(endDate);
 
@@ -42,7 +40,7 @@ export class AppointmentService {
 		return ok(undefined);
 	}
 
-	private validateTitle(title: string): Result<void, ValidationError> {
+	private validateTitle(title: string): DomainResult<void> {
 		if (title.trim().length === 0) {
 			return err(new ValidationError("Title cannot be empty"));
 		}
@@ -52,7 +50,7 @@ export class AppointmentService {
 
 	async getAllAppointments(
 		query: DateRangeQuery = {},
-	): Promise<Result<AppointmentWithUser[], DatabaseError>> {
+	): AsyncDomainResult<AppointmentWithUser[]> {
 		const from = query.from ? new Date(query.from) : undefined;
 		const to = query.to ? new Date(query.to) : undefined;
 
@@ -70,7 +68,7 @@ export class AppointmentService {
 		userId: string,
 		page = 1,
 		limit = 10,
-	): Promise<Result<PaginatedResponse<Appointment>, DatabaseError>> {
+	): AsyncDomainResult<PaginatedResponse<Appointment>> {
 		logger.debug("Fetching appointments by user", { userId, page, limit });
 
 		const result = await this.repository.findByUserId(userId, page, limit);
@@ -86,9 +84,7 @@ export class AppointmentService {
 		});
 	}
 
-	async getAppointmentById(
-		id: string,
-	): Promise<Result<Appointment, NotFoundError | DatabaseError>> {
+	async getAppointmentById(id: string): AsyncDomainResult<Appointment> {
 		logger.debug("Fetching appointment by id", { id });
 
 		const result = await this.repository.findById(id);
@@ -104,7 +100,7 @@ export class AppointmentService {
 
 	async createAppointment(
 		data: CreateAppointmentInput,
-	): Promise<Result<Appointment, ValidationError | DatabaseError>> {
+	): AsyncDomainResult<Appointment> {
 		logger.debug("Creating appointment", { userId: data.userId });
 
 		const titleValidation = this.validateTitle(data.title);
@@ -146,9 +142,7 @@ export class AppointmentService {
 	async updateAppointment(
 		id: string,
 		data: UpdateAppointmentInput,
-	): Promise<
-		Result<Appointment, ValidationError | NotFoundError | DatabaseError>
-	> {
+	): AsyncDomainResult<Appointment> {
 		logger.debug("Updating appointment", { id });
 
 		if (data.title !== undefined) {
@@ -197,9 +191,7 @@ export class AppointmentService {
 		});
 	}
 
-	async deleteAppointment(
-		id: string,
-	): Promise<Result<void, NotFoundError | DatabaseError>> {
+	async deleteAppointment(id: string): AsyncDomainResult<void> {
 		logger.debug("Deleting appointment", { id });
 
 		const deleteResult = await this.repository.delete(id);

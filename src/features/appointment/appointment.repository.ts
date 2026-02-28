@@ -13,6 +13,19 @@ import type {
 } from "./appointment.types";
 
 export class AppointmentRepository implements IAppointmentRepository {
+	async findAll(page: number, limit: number) {
+		return wrapDatabaseOperation(async () => {
+			const offset = (page - 1) * limit;
+
+			const [items, total] = await Promise.all([
+				db.select().from(appointments).limit(limit).offset(offset),
+				getTableCount(appointments),
+			]);
+
+			return { items, total };
+		}, "Failed to fetch appointments");
+	}
+
 	async findByDateRange(from?: Date, to?: Date) {
 		return wrapDatabaseOperation(() => {
 			const conditions = [
@@ -98,14 +111,14 @@ export class AppointmentRepository implements IAppointmentRepository {
 				db
 					.update(appointments)
 					.set({
+						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.title !== undefined && { title: data.title }),
-						...(data.startDate !== undefined && {
-							startDate: new Date(data.startDate),
-						}),
-						...(data.endDate !== undefined && {
-							endDate: new Date(data.endDate),
-						}),
-						...("observation" in data && { observation: data.observation }),
+						// biome-ignore format: to avoid breaking the conditional properties
+						...(data.startDate !== undefined && { startDate: new Date(data.startDate), }),
+						// biome-ignore format: to avoid breaking the conditional properties
+						...(data.endDate !== undefined && { endDate: new Date(data.endDate), }),
+						// biome-ignore format: to avoid breaking the conditional properties
+						...(data.observation !== undefined && { observation: data.observation }),
 						updatedAt: new Date(),
 					})
 					.where(eq(appointments.id, id))

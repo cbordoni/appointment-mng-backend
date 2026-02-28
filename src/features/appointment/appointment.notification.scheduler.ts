@@ -1,18 +1,18 @@
 import { Queue, Worker } from "bullmq";
 import IORedis from "ioredis";
-import { err, ok, type Result } from "neverthrow";
+import { err, ok } from "neverthrow";
 
 import { DomainError } from "@/common/errors";
 import { logger } from "@/common/logger";
 import type { Appointment } from "@/db/schema";
+
+import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler.interface";
 
 const APPOINTMENT_NOTIFICATION_QUEUE = "appointment-notifications";
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 
 const NOTIFICATION_WINDOWS = [
-	{ type: "1m", offsetInMs: 1 * 60 * 1000 },
-	{ type: "5m", offsetInMs: 5 * 60 * 1000 },
 	{ type: "1h", offsetInMs: HOUR_IN_MS },
 	{ type: "24h", offsetInMs: 24 * HOUR_IN_MS },
 ] as const;
@@ -54,20 +54,6 @@ export class AppointmentNotificationError extends DomainError {
 		super(message, "APPOINTMENT_NOTIFICATION_ERROR");
 		this.name = "AppointmentNotificationError";
 	}
-}
-
-export interface IAppointmentNotificationScheduler {
-	scheduleForAppointment(
-		appointment: Appointment,
-	): Promise<Result<void, AppointmentNotificationError>>;
-
-	rescheduleForAppointment(
-		appointment: Appointment,
-	): Promise<Result<void, AppointmentNotificationError>>;
-
-	clearForAppointment(
-		appointmentId: string,
-	): Promise<Result<void, AppointmentNotificationError>>;
 }
 
 export class NoopAppointmentNotificationScheduler
@@ -213,12 +199,8 @@ export class BullMqAppointmentNotificationScheduler
 export function startAppointmentNotificationWorker() {
 	const worker = new Worker<AppointmentNotificationJob>(
 		APPOINTMENT_NOTIFICATION_QUEUE,
-		async (job) => {
-			logger.info("Agendado pro zap", job.data);
-		},
-		{
-			connection: createRedisConnection(),
-		},
+		async (job) => logger.info("Agendado pro zap", job.data),
+		{ connection: createRedisConnection() },
 	);
 
 	worker.on("failed", (_, error) => {

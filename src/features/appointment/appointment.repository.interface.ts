@@ -1,38 +1,19 @@
-import type { Result } from "neverthrow";
-
-import type { DatabaseError, NotFoundError } from "@/common/errors";
-import type { PaginatedResult } from "@/common/types";
+import type { IRepository } from "@/common/repository/repository.interfance";
+import type { AsyncDomainResult } from "@/common/types/database-result";
+import type { PaginatedResult } from "@/common/types/pagination";
 import type { Appointment } from "@/db/schema";
+
 import type {
 	AppointmentWithUser,
 	CreateAppointmentInput,
 	UpdateAppointmentInput,
 } from "./appointment.types";
 
-export interface IAppointmentRepository {
-	findByDateRange(
-		from?: Date,
-		to?: Date,
-	): Promise<Result<AppointmentWithUser[], DatabaseError>>;
+// biome-ignore format: to keep the method signatures clear and consistent
+export interface IAppointmentRepository extends IRepository<Appointment, CreateAppointmentInput, UpdateAppointmentInput> {
+	// biome-ignore format: to keep the method signatures clear and consistent
+	findByDateRange(from?: Date, to?: Date): AsyncDomainResult<AppointmentWithUser[]>;
 
-	findById(
-		id: string,
-	): Promise<Result<Appointment, NotFoundError | DatabaseError>>;
-
-	findByUserId(
-		userId: string,
-		page: number,
-		limit: number,
-	): Promise<Result<PaginatedResult<Appointment>, DatabaseError>>;
-
-	create(
-		data: CreateAppointmentInput,
-	): Promise<Result<Appointment, DatabaseError>>;
-
-	update(
-		id: string,
-		data: UpdateAppointmentInput,
-	): Promise<Result<Appointment, NotFoundError | DatabaseError>>;
-
-	delete(id: string): Promise<Result<void, NotFoundError | DatabaseError>>;
+	// biome-ignore format: to keep the method signatures clear and consistent
+	findByUserId(userId: string, page: number, limit: number): AsyncDomainResult<PaginatedResult<Appointment>>;
 }
