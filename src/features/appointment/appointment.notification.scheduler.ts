@@ -20,9 +20,8 @@ const NOTIFICATION_WINDOWS = [
 type NotificationType = (typeof NOTIFICATION_WINDOWS)[number]["type"];
 
 type AppointmentNotificationJob = {
-	appointmentId: string;
-	notificationType: NotificationType;
-	startDate: string;
+	id: string;
+	window: NotificationType;
 };
 
 function createRedisConnection() {
@@ -96,8 +95,8 @@ export class BullMqAppointmentNotificationScheduler
 			return logger.warn(
 				"Skipping scheduling notification because it's in the past",
 				{
-					appointmentId: appointment.id,
-					notificationType,
+					id: appointment.id,
+					window: notificationType,
 				},
 			);
 		}
@@ -105,18 +104,16 @@ export class BullMqAppointmentNotificationScheduler
 		logger.debug(
 			`Scheduling notification to be sent in ${delay / 1000} seconds`,
 			{
-				appointmentId: appointment.id,
-				notificationType,
-				startDate: appointment.startDate,
+				id: appointment.id,
+				window: notificationType,
 			},
 		);
 
 		await this.queue.add(
 			"send-whatsapp-notification",
 			{
-				appointmentId: appointment.id,
-				notificationType,
-				startDate: appointment.startDate.toISOString(),
+				id: appointment.id,
+				window: notificationType,
 			},
 			{
 				jobId,
