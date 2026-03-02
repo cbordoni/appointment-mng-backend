@@ -6,6 +6,8 @@ import type { IScheduler } from "../scheduler/scheduler.interface";
 import { MockAppointmentRepository } from "./appointment.repository.mock";
 import { AppointmentService } from "./appointment.service";
 import type { CreateAppointmentInput } from "./appointment.types";
+import { AppointmentEventService } from "./event/event.service";
+import { AppointmentProjectionService } from "./projection/projection.service";
 
 const BASE_USER_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -46,12 +48,16 @@ const makeAppointment = (
 describe("AppointmentService", () => {
 	let repository: MockAppointmentRepository;
 	let service: AppointmentService;
+	let projectionService: AppointmentProjectionService;
+	let eventService: AppointmentEventService;
 	let notificationScheduler: MockAppointmentNotificationScheduler;
 
 	beforeEach(() => {
 		repository = new MockAppointmentRepository();
 		notificationScheduler = new MockAppointmentNotificationScheduler();
 		service = new AppointmentService(repository, notificationScheduler);
+		projectionService = new AppointmentProjectionService(repository);
+		eventService = new AppointmentEventService(repository);
 		repository.setUsersMap(new Map([[BASE_USER_ID, "John Doe"]]));
 	});
 
@@ -181,7 +187,7 @@ describe("AppointmentService", () => {
 		});
 	});
 
-	describe("getProjectedAppointments", () => {
+	describe("AppointmentProjectionService > getProjectedAppointments", () => {
 		it("should project weekly recurring appointments within range", async () => {
 			await repository.create(
 				makeAppointment({
@@ -192,7 +198,7 @@ describe("AppointmentService", () => {
 				}),
 			);
 
-			const result = await service.getProjectedAppointments({
+			const result = await projectionService.getProjectedAppointments({
 				from: "2026-03-01T00:00:00.000Z",
 				to: "2026-03-20T23:59:59.000Z",
 			});
@@ -209,7 +215,7 @@ describe("AppointmentService", () => {
 		it("should not project appointments with recurrence none", async () => {
 			await repository.create(makeAppointment());
 
-			const result = await service.getProjectedAppointments({
+			const result = await projectionService.getProjectedAppointments({
 				from: "2026-03-01T00:00:00.000Z",
 				to: "2026-03-31T23:59:59.000Z",
 			});
@@ -232,7 +238,7 @@ describe("AppointmentService", () => {
 				}),
 			);
 
-			const result = await service.getProjectedAppointments({
+			const result = await projectionService.getProjectedAppointments({
 				from: "2026-03-01T00:00:00.000Z",
 				to: "2026-03-31T23:59:59.000Z",
 			});
@@ -245,7 +251,7 @@ describe("AppointmentService", () => {
 		});
 	});
 
-	describe("getCalendarAppointments", () => {
+	describe("AppointmentProjectionService > getCalendarAppointments", () => {
 		it("should merge non-recurring and projected recurring appointments sorted by startDate", async () => {
 			await repository.create(
 				makeAppointment({
@@ -265,7 +271,7 @@ describe("AppointmentService", () => {
 				}),
 			);
 
-			const result = await service.getCalendarAppointments({
+			const result = await projectionService.getCalendarAppointments({
 				from: "2026-03-01T00:00:00.000Z",
 				to: "2026-03-10T23:59:59.000Z",
 			});
@@ -296,7 +302,7 @@ describe("AppointmentService", () => {
 				await repository.delete(oneTime.value.id);
 			}
 
-			const result = await service.getCalendarAppointments({
+			const result = await projectionService.getCalendarAppointments({
 				from: "2026-03-01T00:00:00.000Z",
 				to: "2026-03-10T23:59:59.000Z",
 			});
@@ -538,19 +544,22 @@ describe("AppointmentService", () => {
 		});
 	});
 
-	describe("appointment events", () => {
+	describe("AppointmentEventService", () => {
 		it("should create completed appointment event", async () => {
 			const created = await repository.create(makeAppointment());
 
 			expect(created.isOk()).toBe(true);
 
 			if (created.isOk()) {
-				const result = await service.createAppointmentEvent(created.value.id, {
-					status: "completed",
-					actualStartDate: "2026-03-01T10:05:00.000Z",
-					actualEndDate: "2026-03-01T11:05:00.000Z",
-					performedByUserId: BASE_USER_ID,
-				});
+				const result = await eventService.createAppointmentEvent(
+					created.value.id,
+					{
+						status: "completed",
+						actualStartDate: "2026-03-01T10:05:00.000Z",
+						actualEndDate: "2026-03-01T11:05:00.000Z",
+						performedByUserId: BASE_USER_ID,
+					},
+				);
 
 				expect(result.isOk()).toBe(true);
 
@@ -568,11 +577,14 @@ describe("AppointmentService", () => {
 			expect(created.isOk()).toBe(true);
 
 			if (created.isOk()) {
-				const result = await service.createAppointmentEvent(created.value.id, {
-					status: "completed",
-					actualStartDate: "2026-03-01T10:00:00.000Z",
-					actualEndDate: "2026-03-01T11:00:00.000Z",
-				});
+				const result = await eventService.createAppointmentEvent(
+					created.value.id,
+					{
+						status: "completed",
+						actualStartDate: "2026-03-01T10:00:00.000Z",
+						actualEndDate: "2026-03-01T11:00:00.000Z",
+					},
+				);
 
 				expect(result.isErr()).toBe(true);
 
@@ -588,11 +600,11 @@ describe("AppointmentService", () => {
 			expect(created.isOk()).toBe(true);
 
 			if (created.isOk()) {
-				await service.createAppointmentEvent(created.value.id, {
+				await eventService.createAppointmentEvent(created.value.id, {
 					status: "cancelled",
 				});
 
-				const result = await service.getAppointmentEventsByAppointmentId(
+				const result = await eventService.getAppointmentEventsByAppointmentId(
 					created.value.id,
 				);
 

@@ -35,6 +35,12 @@ Prefixo: `/appointments`
     - `to` (opcional, `date-time`)
   - Descrição: retorna projeções de agendamentos recorrentes no intervalo
 
+- `GET /appointments/calendar`
+  - Query:
+    - `from` (opcional, `date-time`)
+    - `to` (opcional, `date-time`)
+  - Descrição: retorna calendário combinando agendamentos não recorrentes e projeções recorrentes
+
 - `GET /appointments/:id`
   - Params:
     - `id` (UUID)
@@ -103,16 +109,29 @@ Prefixo: `/appointments`
 ## Estrutura da feature
 
 - `appointment.routes.ts`: definição de rotas Elysia
-- `crud/appointment.crud.controller.ts`: mapeamento HTTP para operações CRUD
-- `projection/appointment.projection.controller.ts`: mapeamento HTTP para projeções e calendário
-- `scheduling/appointment.scheduling.controller.ts`: mapeamento HTTP para eventos e histórico
+- `index.ts`: composição de dependências da feature (repository, scheduler e controller)
+- `appointment.controller.ts`: mapeamento HTTP para operações CRUD
 - `appointment.service.ts`: regras de negócio de agendamentos
 - `appointment.repository.ts`: acesso ao banco
 - `appointment.repository.interface.ts`: contrato de repositório
 - `appointment.repository.mock.ts`: mock para testes
-- `notification/appointment.notification.scheduler.ts`: integração com BullMQ para notificações
-- `notification/appointment.notification.scheduler.interface.ts`: contrato do scheduler
 - `appointment.types.ts`: schemas e tipos de entrada
+- `event/`
+  - `event.routes.ts`: rotas de histórico de eventos
+  - `event.controller.ts`: mapeamento HTTP para eventos
+  - `event.service.ts`: regras de negócio de eventos de agendamento
+  - `index.ts`: composição interna do módulo de eventos
+- `projection/`
+  - `projection.routes.ts`: rotas de projeções e calendário
+  - `projection.controller.ts`: mapeamento HTTP para projeções
+  - `projection.service.ts`: regras de negócio de projeções recorrentes
+  - `index.ts`: composição interna do módulo de projeções
+
+## Integração com scheduler
+
+- A orquestração de notificações foi extraída para `src/features/scheduler`
+- `appointment.service.ts` depende do contrato `IScheduler` para `schedule`, `reschedule` e `clear`
+- O worker BullMQ é iniciado pela aplicação em `src/index.ts`
 
 ## Testes
 

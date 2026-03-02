@@ -57,6 +57,12 @@ Prefixo: `/users`
   - Params:
     - `id` (UUID)
 
+## Respostas HTTP
+
+- Endpoints de leitura e escrita retornam payload no formato `{ data: ... }`
+- `POST /users` retorna `201`
+- `DELETE /users/:id` retorna `204`
+
 ## Estrutura da feature
 
 - `user.routes.ts`: definição de rotas Elysia

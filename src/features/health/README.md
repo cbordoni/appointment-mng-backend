@@ -37,6 +37,11 @@ Prefixo: `/health`
 - `health.repository.mock.ts`: mock para testes
 - `health.types.ts`: tipos de domínio da feature
 
+## Observações
+
+- Endpoint exposto: `GET /health`
+- A resposta inclui status da API, conectividade com banco e latência da checagem
+
 ## Testes
 
 - `health.service.test.ts`
