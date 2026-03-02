@@ -19,6 +19,7 @@
 		"bullmq": "^5.70.1",
 		"drizzle-orm": "^0.45.1",
 		"elysia": "latest",
+		"elysia-prometheus": "^1.1.1",
 		"ioredis": "^5.9.3",
 		"neverthrow": "^8.2.0",
 		"postgres": "^3.4.8"
