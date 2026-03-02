@@ -11,24 +11,19 @@ class HealthService {
 	async checkHealth(): Promise<Result<HealthStatus, DomainError>> {
 		const result = await this.repository.checkDatabaseConnection();
 
-		if (result.isErr()) {
-			return err(
-				new DomainError(
-					`Database health check failed: ${result.error.message}`,
-				),
-			);
-		}
-
-		const latency = result.value;
-
-		return ok({
-			status: "ok",
-			database: {
-				connected: true,
-				latency,
-			},
-			timestamp: new Date().toISOString(),
-		});
+		return result.match(
+			(latency) =>
+				ok({
+					status: "ok",
+					database: {
+						connected: true,
+						latency,
+					},
+					timestamp: new Date().toISOString(),
+				}),
+			(error) =>
+				err(new DomainError(`Database health check failed: ${error.message}`)),
+		);
 	}
 }
 

@@ -71,11 +71,10 @@ export class AppointmentService {
 
 		const result = await this.repository.findById(id);
 
-		if (result.isOk()) {
-			logger.info("Appointment fetched successfully", { id });
-		} else {
-			logger.warn("Appointment not found", { id });
-		}
+		result.match(
+			() => logger.info("Appointment fetched successfully", { id }),
+			() => logger.warn("Appointment not found", { id }),
+		);
 
 		return result;
 	}
@@ -85,115 +84,94 @@ export class AppointmentService {
 
 		logger.debug("Creating appointment", { userId });
 
-		const titleValidation = this.validateTitle(title);
+		const validationResult = this.validateTitle(title)
+			// Validate dates only if both are provided
+			.andThen(() => this.validateDates(startDate, endDate));
 
-		if (titleValidation.isErr()) {
-			return err(titleValidation.error);
+		if (validationResult.isErr()) {
+			return err(validationResult.error);
 		}
 
-		const datesValidation = this.validateDates(startDate, endDate);
-
-		if (datesValidation.isErr()) {
-			return err(datesValidation.error);
-		}
-
-		const createResult = await this.repository.create(data);
-
-		if (createResult.isErr()) {
-			return err(createResult.error);
-		}
-
-		const { value } = createResult;
-
-		const scheduleResult = await this.scheduler.schedule({
-			id: value.id,
-			startDate: value.startDate,
-		});
-
-		if (scheduleResult.isErr()) {
-			logger.warn("Failed to schedule appointment notifications", {
-				appointmentId: value.id,
-				error: scheduleResult.error.message,
+		return (await this.repository.create(data)).map(async (value) => {
+			const scheduleResult = await this.scheduler.schedule({
+				id: value.id,
+				startDate: value.startDate,
 			});
-		}
 
-		return ok(value).map((appointment) => {
-			logger.info("Appointment created successfully", { id: appointment.id });
-			return appointment;
+			if (scheduleResult.isErr()) {
+				logger.warn("Failed to schedule appointment notifications", {
+					appointmentId: value.id,
+					error: scheduleResult.error.message,
+				});
+			}
+
+			logger.info("Appointment created successfully", { id: value.id });
+
+			return ok(value);
 		});
 	}
 
 	async updateAppointment(id: string, data: UpdateAppointmentInput) {
 		logger.debug("Updating appointment", { id });
 
-		if (data.title !== undefined) {
-			const titleValidation = this.validateTitle(data.title);
+		const titleValidationResult =
+			data.title !== undefined ? this.validateTitle(data.title) : ok(undefined);
 
-			if (titleValidation.isErr()) {
-				return err(titleValidation.error);
-			}
+		if (titleValidationResult.isErr()) {
+			return err(titleValidationResult.error);
 		}
 
 		const hasStartDate = data.startDate !== undefined;
 		const hasEndDate = data.endDate !== undefined;
 
-		if (hasStartDate && hasEndDate) {
-			const datesValidation = this.validateDates(
-				data.startDate as string,
-				data.endDate as string,
-			);
+		const datesValidationResult =
+			hasStartDate && hasEndDate
+				? this.validateDates(data.startDate as string, data.endDate as string)
+				: ok(undefined);
 
-			if (datesValidation.isErr()) {
-				return err(datesValidation.error);
-			}
+		const validationResult = titleValidationResult
+			// Validate dates only if both startDate and endDate are provided
+			.andThen(() => datesValidationResult);
+
+		if (validationResult.isErr()) {
+			return err(validationResult.error);
 		}
 
-		const result = await this.repository.update(id, data);
-
-		if (result.isErr()) {
-			return err(result.error);
-		}
-
-		const { value } = result;
-
-		const scheduleResult = await this.scheduler.reschedule({
-			id: value.id,
-			startDate: value.startDate,
-		});
-
-		if (scheduleResult.isErr()) {
-			logger.warn("Failed to reschedule appointment notifications", {
-				appointmentId: value.id,
-				error: scheduleResult.error.message,
+		return (await this.repository.update(id, data)).map(async (value) => {
+			const scheduleResult = await this.scheduler.reschedule({
+				id: value.id,
+				startDate: value.startDate,
 			});
-		}
 
-		return ok(value).map((appointment) => {
+			if (scheduleResult.isErr()) {
+				logger.warn("Failed to reschedule appointment notifications", {
+					appointmentId: value.id,
+					error: scheduleResult.error.message,
+				});
+			}
+
 			logger.info("Appointment updated successfully", { id });
-			return appointment;
+
+			return ok(value);
 		});
 	}
 
 	async deleteAppointment(id: string) {
 		logger.debug("Deleting appointment", { id });
 
-		const deleteResult = await this.repository.delete(id);
+		return (await this.repository.delete(id)).map(async () => {
+			logger.info("Appointment deleted successfully", { id });
 
-		if (deleteResult.isErr()) {
-			return err(deleteResult.error);
-		}
-
-		const clearResult = await this.scheduler.clear(id);
-
-		if (clearResult.isErr()) {
-			logger.warn("Failed to clear appointment notifications", {
-				appointmentId: id,
-				error: clearResult.error.message,
+			await this.scheduler.clear(id).then((clearResult) => {
+				if (clearResult.isErr()) {
+					logger.warn("Failed to clear appointment notifications", {
+						appointmentId: id,
+						error: clearResult.error.message,
+					});
+				}
 			});
-		}
 
-		logger.info("Appointment deleted successfully", { id });
-
-		return ok(undefined);
+			return ok(undefined);
+		});
 	}
 }

@@ -1,4 +1,5 @@
 import { err, ok, type Result } from "neverthrow";
+
 import {
 	type DatabaseError,
 	type NotFoundError,
@@ -8,6 +9,7 @@ import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
 import type { User } from "@/db/schema";
+
 import type { IUserRepository } from "./user.repository.interface";
 import type { CreateUserInput, UpdateUserInput } from "./user.types";
 
@@ -15,19 +17,15 @@ export class UserService {
 	constructor(private readonly repository: IUserRepository) {}
 
 	private validateName(name: string): Result<void, ValidationError> {
-		if (name.trim().length === 0) {
-			return err(new ValidationError("Name cannot be empty"));
-		}
-
-		return ok(undefined);
+		return name.trim().length === 0
+			? err(new ValidationError("Name cannot be empty"))
+			: ok(undefined);
 	}
 
 	private validateCellphone(cellphone: string): Result<void, ValidationError> {
-		if (cellphone.replace(/\D/g, "").length < 10) {
-			return err(new ValidationError("Invalid cellphone number"));
-		}
-
-		return ok(undefined);
+		return cellphone.replace(/\D/g, "").length < 10
+			? err(new ValidationError("Invalid cellphone number"))
+			: ok(undefined);
 	}
 
 	async getAllUsers(
@@ -35,9 +33,8 @@ export class UserService {
 		limit = 10,
 	): Promise<Result<PaginatedResponse<User>, DatabaseError>> {
 		logger.debug("Fetching all users", { page, limit });
-		const result = await this.repository.findAll(page, limit);
 
-		return result.map((data) => {
+		return (await this.repository.findAll(page, limit)).map((data) => {
 			logger.info("Users fetched successfully", {
 				count: data.items.length,
 				total: data.total,
@@ -52,13 +49,13 @@ export class UserService {
 		id: string,
 	): Promise<Result<User, NotFoundError | DatabaseError>> {
 		logger.debug("Fetching user by id", { id });
+
 		const result = await this.repository.findById(id);
 
-		if (result.isOk()) {
-			logger.info("User fetched successfully", { id });
-		} else {
-			logger.warn("User not found", { id });
-		}
+		result.match(
+			() => logger.info("User fetched successfully", { id }),
+			() => logger.warn("User not found", { id }),
+		);
 
 		return result;
 	}
@@ -68,23 +65,18 @@ export class UserService {
 	): Promise<Result<User, ValidationError | DatabaseError>> {
 		logger.debug("Creating user", { email: data.email });
 
-		const nameValidation = this.validateName(data.name);
+		const validationResult = this.validateName(data.name)
+			//
+			.andThen(() => this.validateCellphone(data.cellphone));
 
-		if (nameValidation.isErr()) {
-			logger.warn("User creation failed: empty name");
-			return err(nameValidation.error);
+		if (validationResult.isErr()) {
+			logger.warn("User creation failed: invalid input", {
+				reason: validationResult.error.message,
+			});
+			return err(validationResult.error);
 		}
 
-		const cellphoneValidation = this.validateCellphone(data.cellphone);
-
-		if (cellphoneValidation.isErr()) {
-			logger.warn("User creation failed: invalid cellphone");
-			return err(cellphoneValidation.error);
-		}
-
-		const result = await this.repository.create(data);
-
-		return result.map((user) => {
+		return (await this.repository.create(data)).map((user) => {
 			logger.info("User created successfully", {
 				id: user.id,
 				email: user.email,
@@ -100,27 +92,24 @@ export class UserService {
 	): Promise<Result<User, ValidationError | NotFoundError | DatabaseError>> {
 		logger.debug("Updating user", { id, fields: Object.keys(data) });
 
-		if (data.name !== undefined) {
-			const nameValidation = this.validateName(data.name);
+		const nameValidationResult =
+			data.name !== undefined ? this.validateName(data.name) : ok(undefined);
 
-			if (nameValidation.isErr()) {
-				logger.warn("User update failed: empty name", { id });
-				return err(nameValidation.error);
-			}
+		const cellphoneValidationResult =
+			data.cellphone !== undefined
+				? this.validateCellphone(data.cellphone)
+				: ok(undefined);
+
+		const validationResult = nameValidationResult
+			// Validate cellphone only if name is valid (if provided)
+			.andThen(() => cellphoneValidationResult);
+
+		if (validationResult.isErr()) {
+			logger.warn("User update failed: invalid input", { id });
+			return err(validationResult.error);
 		}
 
-		if (data.cellphone !== undefined) {
-			const cellphoneValidation = this.validateCellphone(data.cellphone);
-
-			if (cellphoneValidation.isErr()) {
-				logger.warn("User update failed: invalid cellphone", { id });
-				return err(cellphoneValidation.error);
-			}
-		}
-
-		const result = await this.repository.update(id, data);
-
-		return result.map((user) => {
+		return (await this.repository.update(id, data)).map((user) => {
 			logger.info("User updated successfully", { id });
 			return user;
 		});
@@ -131,9 +120,7 @@ export class UserService {
 	): Promise<Result<void, NotFoundError | DatabaseError>> {
 		logger.debug("Deleting user", { id });
 
-		const result = await this.repository.delete(id);
-
-		return result.map(() => {
+		return (await this.repository.delete(id)).map(() => {
 			logger.info("User deleted successfully", { id });
 			return undefined;
 		});
