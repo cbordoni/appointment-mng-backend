@@ -1,25 +1,49 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, isNull, lte, ne } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
 import { getTableCount, wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
-import { appointments, users } from "@/db/schema";
+import { appointmentEvents, appointments, users } from "@/db/schema";
 
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
+	AppointmentProjection,
+	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	UpdateAppointmentInput,
 } from "./appointment.types";
 
 export class AppointmentRepository implements IAppointmentRepository {
+	private addRecurrenceDate(
+		date: Date,
+		recurrence: "weekly" | "monthly",
+	): Date {
+		const nextDate = new Date(date);
+
+		if (recurrence === "weekly") {
+			nextDate.setDate(nextDate.getDate() + 7);
+			return nextDate;
+		}
+
+		nextDate.setMonth(nextDate.getMonth() + 1);
+
+		return nextDate;
+	}
+
 	async findAll(page: number, limit: number) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
+			const notDeleted = isNull(appointments.deletedAt);
 
 			const [items, total] = await Promise.all([
-				db.select().from(appointments).limit(limit).offset(offset),
-				getTableCount(appointments),
+				db
+					.select()
+					.from(appointments)
+					.where(notDeleted)
+					.limit(limit)
+					.offset(offset),
+				getTableCount(appointments, notDeleted),
 			]);
 
 			return { items, total };
@@ -29,6 +53,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 	async findByDateRange(from?: Date, to?: Date) {
 		return wrapDatabaseOperation(() => {
 			const conditions = [
+				isNull(appointments.deletedAt),
 				from ? gte(appointments.startDate, from) : undefined,
 				to ? lte(appointments.startDate, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;
@@ -39,6 +64,9 @@ export class AppointmentRepository implements IAppointmentRepository {
 					title: appointments.title,
 					startDate: appointments.startDate,
 					endDate: appointments.endDate,
+					active: appointments.active,
+					recurrence: appointments.recurrence,
+					deletedAt: appointments.deletedAt,
 					observation: appointments.observation,
 					userName: users.name,
 					createdAt: appointments.createdAt,
@@ -53,9 +81,48 @@ export class AppointmentRepository implements IAppointmentRepository {
 		}, "Failed to fetch appointments");
 	}
 
+	async findNonRecurringByDateRange(from?: Date, to?: Date) {
+		return wrapDatabaseOperation(async () => {
+			const conditions = [
+				isNull(appointments.deletedAt),
+				eq(appointments.recurrence, "none"),
+				from ? gte(appointments.startDate, from) : undefined,
+				to ? lte(appointments.startDate, to) : undefined,
+			].filter(Boolean) as Parameters<typeof and>;
+
+			const nonRecurringAppointments = await db
+				.select({
+					id: appointments.id,
+					title: appointments.title,
+					startDate: appointments.startDate,
+					endDate: appointments.endDate,
+					observation: appointments.observation,
+					recurrence: appointments.recurrence,
+					userName: users.name,
+				})
+				.from(appointments)
+				.innerJoin(users, eq(appointments.userId, users.id))
+				.where(and(...conditions));
+
+			return nonRecurringAppointments.map((appointment) => ({
+				sourceAppointmentId: appointment.id,
+				title: appointment.title,
+				startDate: appointment.startDate,
+				endDate: appointment.endDate,
+				observation: appointment.observation,
+				recurrence: appointment.recurrence,
+				userName: appointment.userName,
+			}));
+		}, "Failed to fetch non-recurring appointments");
+	}
+
 	async findById(id: string) {
 		const result = await wrapDatabaseOperation(
-			() => db.select().from(appointments).where(eq(appointments.id, id)),
+			() =>
+				db
+					.select()
+					.from(appointments)
+					.where(and(eq(appointments.id, id), isNull(appointments.deletedAt))),
 			"Failed to fetch appointment",
 		);
 
@@ -71,15 +138,19 @@ export class AppointmentRepository implements IAppointmentRepository {
 	async findByUserId(userId: string, page: number, limit: number) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
+			const conditions = and(
+				eq(appointments.userId, userId),
+				isNull(appointments.deletedAt),
+			);
 
 			const [items, total] = await Promise.all([
 				db
 					.select()
 					.from(appointments)
-					.where(eq(appointments.userId, userId))
+					.where(conditions)
 					.limit(limit)
 					.offset(offset),
-				getTableCount(appointments, eq(appointments.userId, userId)),
+				getTableCount(appointments, conditions),
 			]);
 
 			return { items, total };
@@ -95,6 +166,9 @@ export class AppointmentRepository implements IAppointmentRepository {
 						title: data.title,
 						startDate: new Date(data.startDate),
 						endDate: new Date(data.endDate),
+						recurrence: data.recurrence ?? "none",
+						active: data.active ?? true,
+						deletedAt: null,
 						observation: data.observation ?? null,
 						userId: data.userId,
 					})
@@ -118,10 +192,14 @@ export class AppointmentRepository implements IAppointmentRepository {
 						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.endDate !== undefined && { endDate: new Date(data.endDate), }),
 						// biome-ignore format: to avoid breaking the conditional properties
+						...(data.recurrence !== undefined && { recurrence: data.recurrence }),
+						// biome-ignore format: to avoid breaking the conditional properties
+						...(data.active !== undefined && { active: data.active }),
+						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.observation !== undefined && { observation: data.observation }),
 						updatedAt: new Date(),
 					})
-					.where(eq(appointments.id, id))
+					.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
 					.returning(),
 			"Failed to update appointment",
 		);
@@ -137,7 +215,16 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 	async delete(id: string) {
 		const result = await wrapDatabaseOperation(
-			() => db.delete(appointments).where(eq(appointments.id, id)).returning(),
+			() =>
+				db
+					.update(appointments)
+					.set({
+						active: false,
+						deletedAt: new Date(),
+						updatedAt: new Date(),
+					})
+					.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
+					.returning(),
 			"Failed to delete appointment",
 		);
 
@@ -148,5 +235,127 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 			return ok(undefined);
 		});
+	}
+
+	async findProjectedByDateRange(from?: Date, to?: Date) {
+		return wrapDatabaseOperation(async () => {
+			const rangeStart = from ?? new Date();
+
+			// Default to 3 months range if 'to' is not provided
+			const threeMonthsInMs = 1000 * 60 * 60 * 24 * 90;
+
+			const rangeEnd = to ?? new Date(rangeStart.getTime() + threeMonthsInMs);
+
+			const recurringAppointments = await db
+				.select({
+					id: appointments.id,
+					title: appointments.title,
+					startDate: appointments.startDate,
+					endDate: appointments.endDate,
+					active: appointments.active,
+					recurrence: appointments.recurrence,
+					observation: appointments.observation,
+					userName: users.name,
+				})
+				.from(appointments)
+				.innerJoin(users, eq(appointments.userId, users.id))
+				.where(
+					and(
+						ne(appointments.recurrence, "none"),
+						eq(appointments.active, true),
+						isNull(appointments.deletedAt),
+					),
+				);
+
+			const projected: AppointmentProjection[] = [];
+
+			for (const appointment of recurringAppointments) {
+				if (appointment.recurrence === "none" || !appointment.active) {
+					continue;
+				}
+
+				let currentStart = new Date(appointment.startDate);
+				let currentEnd = new Date(appointment.endDate);
+				let guard = 0;
+
+				while (currentStart <= rangeEnd && guard < 600) {
+					if (currentStart >= rangeStart) {
+						projected.push({
+							sourceAppointmentId: appointment.id,
+							title: appointment.title,
+							startDate: new Date(currentStart),
+							endDate: new Date(currentEnd),
+							observation: appointment.observation,
+							recurrence: appointment.recurrence,
+							userName: appointment.userName,
+						});
+					}
+
+					currentStart = this.addRecurrenceDate(
+						currentStart,
+						appointment.recurrence,
+					);
+
+					currentEnd = this.addRecurrenceDate(
+						currentEnd,
+						appointment.recurrence,
+					);
+
+					guard += 1;
+				}
+			}
+
+			projected.sort((left, right) => {
+				return left.startDate.getTime() - right.startDate.getTime();
+			});
+
+			return projected;
+		}, "Failed to project recurring appointments");
+	}
+
+	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {
+		const appointmentResult = await this.findById(appointmentId);
+
+		if (appointmentResult.isErr()) {
+			return err(appointmentResult.error);
+		}
+
+		const appointment = appointmentResult.value;
+
+		const result = await wrapDatabaseOperation(
+			() =>
+				db
+					.insert(appointmentEvents)
+					.values({
+						appointmentId,
+						status: data.status,
+						summary: data.summary ?? null,
+						originalStartDate: appointment.startDate,
+						originalEndDate: appointment.endDate,
+						actualStartDate: data.actualStartDate
+							? new Date(data.actualStartDate)
+							: null,
+						actualEndDate: data.actualEndDate
+							? new Date(data.actualEndDate)
+							: null,
+						performedByUserId: data.performedByUserId ?? null,
+						newAppointmentId: data.newAppointmentId ?? null,
+					})
+					.returning(),
+			"Failed to create appointment event",
+		);
+
+		return result.map(([event]) => event);
+	}
+
+	async findEventsByAppointmentId(appointmentId: string) {
+		return wrapDatabaseOperation(
+			() =>
+				db
+					.select()
+					.from(appointmentEvents)
+					.where(eq(appointmentEvents.appointmentId, appointmentId)),
+			"Failed to fetch appointment events",
+		);
 	}
 }

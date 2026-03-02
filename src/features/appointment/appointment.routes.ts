@@ -8,6 +8,7 @@ import { AppointmentRepository } from "./appointment.repository";
 import { AppointmentService } from "./appointment.service";
 import {
 	AppointmentIdSchema,
+	CreateAppointmentEventSchema,
 	CreateAppointmentSchema,
 	DateRangeQuerySchema,
 	UpdateAppointmentSchema,
@@ -42,6 +43,59 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 			query: PaginationQuerySchema,
 			detail: {
 				summary: "Get appointments by user ID",
+				tags: ["Appointments"],
+			},
+		},
+	)
+	.get(
+		"/projections",
+		async ({ query }) => {
+			return await controller.getProjected(query);
+		},
+		{
+			query: DateRangeQuerySchema,
+			detail: {
+				summary: "Get projected recurring appointments by date range",
+				tags: ["Appointments"],
+			},
+		},
+	)
+	.get(
+		"/calendar",
+		async ({ query }) => {
+			return await controller.getCalendar(query);
+		},
+		{
+			query: DateRangeQuerySchema,
+			detail: {
+				summary: "Get calendar items (non-recurring + recurring projections)",
+				tags: ["Appointments"],
+			},
+		},
+	)
+	.get(
+		"/:id/events",
+		async ({ params }) => {
+			return await controller.getEventsByAppointmentId(params.id);
+		},
+		{
+			params: AppointmentIdSchema,
+			detail: {
+				summary: "Get appointment events by appointment ID",
+				tags: ["Appointments"],
+			},
+		},
+	)
+	.post(
+		"/:id/events",
+		async ({ params, body }) => {
+			return await controller.createEvent(params.id, body);
+		},
+		{
+			params: AppointmentIdSchema,
+			body: CreateAppointmentEventSchema,
+			detail: {
+				summary: "Create event history for appointment",
 				tags: ["Appointments"],
 			},
 		},

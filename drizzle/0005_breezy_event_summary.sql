@@ -1,0 +1,1 @@
+ALTER TABLE "appointment_events" ADD COLUMN "summary" text;

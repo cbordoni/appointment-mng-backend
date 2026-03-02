@@ -3,6 +3,7 @@ import type { PaginationQuery } from "@/common/types";
 
 import type { AppointmentService } from "./appointment.service";
 import type {
+	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	DateRangeQuery,
 	UpdateAppointmentInput,
@@ -29,6 +30,18 @@ export class AppointmentController extends BaseController {
 		);
 
 		return result.match((paginatedData) => paginatedData, this.handleError);
+	}
+
+	async getProjected(query: DateRangeQuery) {
+		const result = await this.service.getProjectedAppointments(query);
+
+		return result.match((data) => ({ data }), this.handleError);
+	}
+
+	async getCalendar(query: DateRangeQuery) {
+		const result = await this.service.getCalendarAppointments(query);
+
+		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async getById(id: string) {
@@ -62,5 +75,21 @@ export class AppointmentController extends BaseController {
 		const result = await this.service.deleteAppointment(id);
 
 		return result.match(() => ({ status: 204 }), this.handleError);
+	}
+
+	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {
+		const result = await this.service.createAppointmentEvent(
+			appointmentId,
+			data,
+		);
+
+		return result.match((event) => ({ data: event }), this.handleError);
+	}
+
+	async getEventsByAppointmentId(appointmentId: string) {
+		const result =
+			await this.service.getAppointmentEventsByAppointmentId(appointmentId);
+
+		return result.match((events) => ({ data: events }), this.handleError);
 	}
 }

@@ -1,12 +1,14 @@
-import { ok, type Result } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 
-import type { NotFoundError } from "@/common/errors";
-import type { Appointment } from "@/db/schema";
+import { NotFoundError } from "@/common/errors";
+import type { Appointment, AppointmentEvent } from "@/db/schema";
 import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
 
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
+	AppointmentProjection,
 	AppointmentWithUser,
+	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	UpdateAppointmentInput,
 } from "./appointment.types";
@@ -16,6 +18,20 @@ export class MockAppointmentRepository
 	implements IAppointmentRepository
 {
 	private usersMap = new Map<string, string>();
+	private events: AppointmentEvent[] = [];
+
+	private addRecurrenceDate(date: Date, recurrence: "weekly" | "monthly") {
+		const nextDate = new Date(date);
+
+		if (recurrence === "weekly") {
+			nextDate.setDate(nextDate.getDate() + 7);
+			return nextDate;
+		}
+
+		nextDate.setMonth(nextDate.getMonth() + 1);
+
+		return nextDate;
+	}
 
 	protected get entityName(): string {
 		return "Appointment";
@@ -26,7 +42,11 @@ export class MockAppointmentRepository
 	}
 
 	async findAll(page: number, limit: number) {
-		return super.findAll(page, limit);
+		const filtered = this.items.filter((appointment) => !appointment.deletedAt);
+		const offset = (page - 1) * limit;
+		const items = filtered.slice(offset, offset + limit);
+
+		return ok({ items, total: filtered.length });
 	}
 
 	async findByDateRange(
@@ -34,6 +54,8 @@ export class MockAppointmentRepository
 		to?: Date,
 	): Promise<Result<AppointmentWithUser[], never>> {
 		const filtered = this.items.filter((a) => {
+			if (a.deletedAt) return false;
+
 			if (from && a.startDate < from) return false;
 
 			if (to && a.startDate > to) return false;
@@ -49,8 +71,39 @@ export class MockAppointmentRepository
 		return ok(result);
 	}
 
+	async findNonRecurringByDateRange(
+		from?: Date,
+		to?: Date,
+	): Promise<Result<AppointmentProjection[], never>> {
+		const filtered = this.items.filter((appointment) => {
+			if (appointment.deletedAt) return false;
+
+			if (appointment.recurrence !== "none") return false;
+
+			if (from && appointment.startDate < from) return false;
+
+			if (to && appointment.startDate > to) return false;
+
+			return true;
+		});
+
+		return ok(
+			filtered.map((appointment) => ({
+				sourceAppointmentId: appointment.id,
+				title: appointment.title,
+				startDate: appointment.startDate,
+				endDate: appointment.endDate,
+				observation: appointment.observation,
+				recurrence: appointment.recurrence,
+				userName: this.usersMap.get(appointment.userId) ?? "Unknown",
+			})),
+		);
+	}
+
 	async findByUserId(userId: string, page: number, limit: number) {
-		const filtered = this.items.filter((a) => a.userId === userId);
+		const filtered = this.items.filter((a) => {
+			return a.userId === userId && !a.deletedAt;
+		});
 		const offset = (page - 1) * limit;
 		const items = filtered.slice(offset, offset + limit);
 
@@ -63,6 +116,9 @@ export class MockAppointmentRepository
 			title: data.title,
 			startDate: new Date(data.startDate),
 			endDate: new Date(data.endDate),
+			recurrence: data.recurrence ?? "none",
+			active: data.active ?? true,
+			deletedAt: null,
 			observation: data.observation ?? null,
 			userId: data.userId,
 			createdAt: new Date(),
@@ -74,17 +130,34 @@ export class MockAppointmentRepository
 		return ok(appointment);
 	}
 
+	async findById(id: string) {
+		const appointment = this.items.find((item) => {
+			return item.id === id && !item.deletedAt;
+		});
+
+		if (!appointment) {
+			return err(this.createNotFound(id));
+		}
+
+		return ok(appointment);
+	}
+
+	private createNotFound(id: string): NotFoundError {
+		return new NotFoundError("Appointment", id);
+	}
+
 	private async updateAtIndex(
 		id: string,
 		updater: (appointment: Appointment) => Appointment,
 	) {
-		const indexResult = await this.findIndexById(id);
+		const index = this.items.findIndex((item) => {
+			return item.id === id && !item.deletedAt;
+		});
 
-		if (indexResult.isErr()) {
-			return indexResult as Result<never, NotFoundError>;
+		if (index === -1) {
+			return err(this.createNotFound(id));
 		}
 
-		const index = indexResult.value;
 		const current = this.items[index];
 		const updated = updater(current);
 
@@ -101,9 +174,110 @@ export class MockAppointmentRepository
 				startDate: new Date(data.startDate),
 			}),
 			...(data.endDate !== undefined && { endDate: new Date(data.endDate) }),
+			...(data.recurrence !== undefined && { recurrence: data.recurrence }),
+			...(data.active !== undefined && { active: data.active }),
 			...("observation" in data && { observation: data.observation ?? null }),
 			updatedAt: new Date(),
 		}));
+	}
+
+	async findProjectedByDateRange(
+		from?: Date,
+		to?: Date,
+	): Promise<Result<AppointmentProjection[], never>> {
+		const rangeStart = from ?? new Date();
+		const rangeEnd =
+			to ?? new Date(rangeStart.getTime() + 1000 * 60 * 60 * 24 * 90);
+		const projected: AppointmentProjection[] = [];
+
+		for (const appointment of this.items) {
+			if (
+				appointment.deletedAt ||
+				appointment.recurrence === "none" ||
+				!appointment.active
+			) {
+				continue;
+			}
+
+			let currentStart = new Date(appointment.startDate);
+			let currentEnd = new Date(appointment.endDate);
+			let guard = 0;
+
+			while (currentStart <= rangeEnd && guard < 600) {
+				if (currentStart >= rangeStart) {
+					projected.push({
+						sourceAppointmentId: appointment.id,
+						title: appointment.title,
+						startDate: new Date(currentStart),
+						endDate: new Date(currentEnd),
+						observation: appointment.observation,
+						recurrence: appointment.recurrence,
+						userName: this.usersMap.get(appointment.userId) ?? "Unknown",
+					});
+				}
+
+				currentStart = this.addRecurrenceDate(
+					currentStart,
+					appointment.recurrence,
+				);
+				currentEnd = this.addRecurrenceDate(currentEnd, appointment.recurrence);
+				guard += 1;
+			}
+		}
+
+		projected.sort((left, right) => {
+			return left.startDate.getTime() - right.startDate.getTime();
+		});
+
+		return ok(projected);
+	}
+
+	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {
+		const appointmentResult = await this.findById(appointmentId);
+
+		if (appointmentResult.isErr()) {
+			return err(appointmentResult.error);
+		}
+
+		const event: AppointmentEvent = {
+			id: crypto.randomUUID(),
+			appointmentId,
+			status: data.status,
+			summary: data.summary ?? null,
+			originalStartDate: appointmentResult.value.startDate,
+			originalEndDate: appointmentResult.value.endDate,
+			actualStartDate: data.actualStartDate
+				? new Date(data.actualStartDate)
+				: null,
+			actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : null,
+			performedByUserId: data.performedByUserId ?? null,
+			newAppointmentId: data.newAppointmentId ?? null,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+
+		this.events.push(event);
+
+		return ok(event);
+	}
+
+	async findEventsByAppointmentId(
+		appointmentId: string,
+	): Promise<Result<AppointmentEvent[], never>> {
+		return ok(
+			this.events.filter((event) => event.appointmentId === appointmentId),
+		);
+	}
+
+	async delete(id: string) {
+		const result = await this.updateAtIndex(id, (current) => ({
+			...current,
+			active: false,
+			deletedAt: new Date(),
+			updatedAt: new Date(),
+		}));
+
+		return result.map(() => undefined);
 	}
 
 	setAppointments(appointments: Appointment[]) {
@@ -112,5 +286,6 @@ export class MockAppointmentRepository
 
 	clearAppointments() {
 		this.clearItems();
+		this.events = [];
 	}
 }

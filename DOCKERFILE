@@ -24,3 +24,14 @@ COPY --from=builder /app/server /app/server
 # Run the binary directly
 EXPOSE 3000
 CMD ["/app/server"]
+
+# Development watch mode (optional)
+FROM oven/bun:latest AS development
+WORKDIR /app
+
+COPY package.json bun.lock ./ 
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+CMD ["bun", "run", "dev"]

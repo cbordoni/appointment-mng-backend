@@ -104,17 +104,6 @@ bun run format
 bun run check
 ```
 
-## Endpoints principais
-
-- `GET /` - root da API
-- `GET /health` - health check da API e banco
-- `GET /users` - listagem paginada de usuários
-- `POST /users` - criação de usuário
-- `GET /appointments` - listagem de agendamentos por intervalo de data
-- `POST /appointments` - criação de agendamento
-
-Para detalhes de payload, params e responses, consulte `/docs`.
-
 ## Estrutura do projeto (resumo)
 
 ```text

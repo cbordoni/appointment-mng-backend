@@ -15,6 +15,34 @@
 			"when": 1772118843177,
 			"tag": "0001_secret_lord_hawal",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1772380800000,
+			"tag": "0002_fancy_recurrence_events",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1772457000000,
+			"tag": "0003_awesome_active_appointments",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1772457600000,
+			"tag": "0004_soft_delete_appointments",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1772458200000,
+			"tag": "0005_breezy_event_summary",
+			"breakpoints": true
 		}
 	]
 }

@@ -14,7 +14,10 @@ import { NoopAppointmentNotificationScheduler } from "./appointment.notification
 import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler.interface";
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
+	AppointmentEventWithSource,
+	AppointmentProjection,
 	AppointmentWithUser,
+	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	DateRangeQuery,
 	UpdateAppointmentInput,
@@ -23,7 +26,7 @@ import type {
 export class AppointmentService {
 	constructor(
 		private readonly repository: IAppointmentRepository,
-		private readonly notificationScheduler: IAppointmentNotificationScheduler = new NoopAppointmentNotificationScheduler(),
+		private readonly scheduler: IAppointmentNotificationScheduler = new NoopAppointmentNotificationScheduler(),
 	) {}
 
 	private validateDates(
@@ -43,6 +46,55 @@ export class AppointmentService {
 	private validateTitle(title: string): DomainResult<void> {
 		if (title.trim().length === 0) {
 			return err(new ValidationError("Title cannot be empty"));
+		}
+
+		return ok(undefined);
+	}
+
+	private validateAppointmentEventInput(
+		data: CreateAppointmentEventInput,
+	): DomainResult<void> {
+		const {
+			status,
+			newAppointmentId,
+			actualStartDate,
+			actualEndDate,
+			performedByUserId,
+		} = data;
+
+		if (status === "rescheduled" && !newAppointmentId) {
+			return err(
+				new ValidationError(
+					"newAppointmentId is required for rescheduled events",
+				),
+			);
+		}
+
+		if (
+			(actualStartDate && !actualEndDate) ||
+			(!actualStartDate && actualEndDate)
+		) {
+			return err(
+				new ValidationError(
+					"actualStartDate and actualEndDate must be provided together",
+				),
+			);
+		}
+
+		if (actualStartDate && actualEndDate) {
+			const dateValidation = this.validateDates(actualStartDate, actualEndDate);
+
+			if (dateValidation.isErr()) {
+				return err(dateValidation.error);
+			}
+		}
+
+		if (status === "completed" && !performedByUserId) {
+			return err(
+				new ValidationError(
+					"performedByUserId is required for completed events",
+				),
+			);
 		}
 
 		return ok(undefined);
@@ -84,6 +136,59 @@ export class AppointmentService {
 		});
 	}
 
+	async getProjectedAppointments(
+		query: DateRangeQuery = {},
+	): AsyncDomainResult<AppointmentProjection[]> {
+		const from = query.from ? new Date(query.from) : undefined;
+		const to = query.to ? new Date(query.to) : undefined;
+
+		logger.debug("Projecting recurring appointments", { from, to });
+
+		const result = await this.repository.findProjectedByDateRange(from, to);
+
+		return result.map((items) => {
+			logger.info("Recurring appointments projected successfully", {
+				count: items.length,
+			});
+
+			return items;
+		});
+	}
+
+	async getCalendarAppointments(
+		query: DateRangeQuery = {},
+	): AsyncDomainResult<AppointmentProjection[]> {
+		const from = query.from ? new Date(query.from) : undefined;
+		const to = query.to ? new Date(query.to) : undefined;
+
+		logger.debug("Fetching calendar appointments", { from, to });
+
+		const [nonRecurringResult, projectedResult] = await Promise.all([
+			this.repository.findNonRecurringByDateRange(from, to),
+			this.repository.findProjectedByDateRange(from, to),
+		]);
+
+		if (nonRecurringResult.isErr()) {
+			return err(nonRecurringResult.error);
+		}
+
+		if (projectedResult.isErr()) {
+			return err(projectedResult.error);
+		}
+
+		const items = [...nonRecurringResult.value, ...projectedResult.value].sort(
+			(left, right) => left.startDate.getTime() - right.startDate.getTime(),
+		);
+
+		return ok(items).map((calendarItems) => {
+			logger.info("Calendar appointments fetched successfully", {
+				count: calendarItems.length,
+			});
+
+			return calendarItems;
+		});
+	}
+
 	async getAppointmentById(id: string): AsyncDomainResult<Appointment> {
 		logger.debug("Fetching appointment by id", { id });
 
@@ -101,15 +206,17 @@ export class AppointmentService {
 	async createAppointment(
 		data: CreateAppointmentInput,
 	): AsyncDomainResult<Appointment> {
-		logger.debug("Creating appointment", { userId: data.userId });
+		const { title, startDate, endDate, userId } = data;
 
-		const titleValidation = this.validateTitle(data.title);
+		logger.debug("Creating appointment", { userId });
+
+		const titleValidation = this.validateTitle(title);
 
 		if (titleValidation.isErr()) {
 			return err(titleValidation.error);
 		}
 
-		const datesValidation = this.validateDates(data.startDate, data.endDate);
+		const datesValidation = this.validateDates(startDate, endDate);
 
 		if (datesValidation.isErr()) {
 			return err(datesValidation.error);
@@ -121,19 +228,18 @@ export class AppointmentService {
 			return err(createResult.error);
 		}
 
-		const scheduleResult =
-			await this.notificationScheduler.scheduleForAppointment(
-				createResult.value,
-			);
+		const { value } = createResult;
+
+		const scheduleResult = await this.scheduler.scheduleForAppointment(value);
 
 		if (scheduleResult.isErr()) {
 			logger.warn("Failed to schedule appointment notifications", {
-				appointmentId: createResult.value.id,
+				appointmentId: value.id,
 				error: scheduleResult.error.message,
 			});
 		}
 
-		return ok(createResult.value).map((appointment) => {
+		return ok(value).map((appointment) => {
 			logger.info("Appointment created successfully", { id: appointment.id });
 			return appointment;
 		});
@@ -173,10 +279,9 @@ export class AppointmentService {
 			return err(updateResult.error);
 		}
 
-		const scheduleResult =
-			await this.notificationScheduler.rescheduleForAppointment(
-				updateResult.value,
-			);
+		const scheduleResult = await this.scheduler.rescheduleForAppointment(
+			updateResult.value,
+		);
 
 		if (scheduleResult.isErr()) {
 			logger.warn("Failed to reschedule appointment notifications", {
@@ -200,8 +305,7 @@ export class AppointmentService {
 			return err(deleteResult.error);
 		}
 
-		const clearResult =
-			await this.notificationScheduler.clearForAppointment(id);
+		const clearResult = await this.scheduler.clearForAppointment(id);
 
 		if (clearResult.isErr()) {
 			logger.warn("Failed to clear appointment notifications", {
@@ -213,6 +317,52 @@ export class AppointmentService {
 		return ok(undefined).map(() => {
 			logger.info("Appointment deleted successfully", { id });
 			return undefined;
+		});
+	}
+
+	async createAppointmentEvent(
+		appointmentId: string,
+		data: CreateAppointmentEventInput,
+	): AsyncDomainResult<AppointmentEventWithSource> {
+		const validationResult = this.validateAppointmentEventInput(data);
+
+		if (validationResult.isErr()) {
+			return err(validationResult.error);
+		}
+
+		logger.debug("Creating appointment event", {
+			appointmentId,
+			status: data.status,
+		});
+
+		const result = await this.repository.createEvent(appointmentId, data);
+
+		return result.map((event) => {
+			logger.info("Appointment event created successfully", {
+				appointmentId,
+				eventId: event.id,
+				status: event.status,
+			});
+
+			return event;
+		});
+	}
+
+	async getAppointmentEventsByAppointmentId(
+		appointmentId: string,
+	): AsyncDomainResult<AppointmentEventWithSource[]> {
+		logger.debug("Fetching appointment events", { appointmentId });
+
+		const result =
+			await this.repository.findEventsByAppointmentId(appointmentId);
+
+		return result.map((events) => {
+			logger.info("Appointment events fetched successfully", {
+				appointmentId,
+				count: events.length,
+			});
+
+			return events;
 		});
 	}
 }

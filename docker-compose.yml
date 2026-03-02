@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: DOCKERFILE
-      target: release
+      target: development
     container_name: appointment-mng-backend
     restart: unless-stopped
     env_file:

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { ok } from "neverthrow";
+
 import { ValidationError } from "@/common/errors";
-import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler";
+import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler.interface";
 import { MockAppointmentRepository } from "./appointment.repository.mock";
 import { AppointmentService } from "./appointment.service";
 import type { CreateAppointmentInput } from "./appointment.types";
@@ -178,6 +179,134 @@ describe("AppointmentService", () => {
 			if (result.isOk()) {
 				expect(result.value.data).toHaveLength(1);
 				expect(result.value.data[0].userId).toBe(BASE_USER_ID);
+			}
+		});
+	});
+
+	describe("getProjectedAppointments", () => {
+		it("should project weekly recurring appointments within range", async () => {
+			await repository.create(
+				makeAppointment({
+					title: "Weekly Therapy",
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+					recurrence: "weekly",
+				}),
+			);
+
+			const result = await service.getProjectedAppointments({
+				from: "2026-03-01T00:00:00.000Z",
+				to: "2026-03-20T23:59:59.000Z",
+			});
+
+			expect(result.isOk()).toBe(true);
+
+			if (result.isOk()) {
+				expect(result.value).toHaveLength(3);
+				expect(result.value[0].title).toBe("Weekly Therapy");
+				expect(result.value[0].recurrence).toBe("weekly");
+			}
+		});
+
+		it("should not project appointments with recurrence none", async () => {
+			await repository.create(makeAppointment());
+
+			const result = await service.getProjectedAppointments({
+				from: "2026-03-01T00:00:00.000Z",
+				to: "2026-03-31T23:59:59.000Z",
+			});
+
+			expect(result.isOk()).toBe(true);
+
+			if (result.isOk()) {
+				expect(result.value).toHaveLength(0);
+			}
+		});
+
+		it("should not project inactive recurring appointments", async () => {
+			await repository.create(
+				makeAppointment({
+					title: "Inactive Weekly",
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+					recurrence: "weekly",
+					active: false,
+				}),
+			);
+
+			const result = await service.getProjectedAppointments({
+				from: "2026-03-01T00:00:00.000Z",
+				to: "2026-03-31T23:59:59.000Z",
+			});
+
+			expect(result.isOk()).toBe(true);
+
+			if (result.isOk()) {
+				expect(result.value).toHaveLength(0);
+			}
+		});
+	});
+
+	describe("getCalendarAppointments", () => {
+		it("should merge non-recurring and projected recurring appointments sorted by startDate", async () => {
+			await repository.create(
+				makeAppointment({
+					title: "One-time Session",
+					startDate: "2026-03-03T10:00:00.000Z",
+					endDate: "2026-03-03T11:00:00.000Z",
+					recurrence: "none",
+				}),
+			);
+
+			await repository.create(
+				makeAppointment({
+					title: "Weekly Therapy",
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+					recurrence: "weekly",
+				}),
+			);
+
+			const result = await service.getCalendarAppointments({
+				from: "2026-03-01T00:00:00.000Z",
+				to: "2026-03-10T23:59:59.000Z",
+			});
+
+			expect(result.isOk()).toBe(true);
+
+			if (result.isOk()) {
+				expect(result.value).toHaveLength(3);
+				expect(result.value[0].title).toBe("Weekly Therapy");
+				expect(result.value[1].title).toBe("One-time Session");
+				expect(result.value[1].recurrence).toBe("none");
+			}
+		});
+
+		it("should not include deleted non-recurring appointments", async () => {
+			const oneTime = await repository.create(
+				makeAppointment({
+					title: "Deleted Session",
+					startDate: "2026-03-03T10:00:00.000Z",
+					endDate: "2026-03-03T11:00:00.000Z",
+					recurrence: "none",
+				}),
+			);
+
+			expect(oneTime.isOk()).toBe(true);
+
+			if (oneTime.isOk()) {
+				await repository.delete(oneTime.value.id);
+			}
+
+			const result = await service.getCalendarAppointments({
+				from: "2026-03-01T00:00:00.000Z",
+				to: "2026-03-10T23:59:59.000Z",
+			});
+
+			expect(result.isOk()).toBe(true);
+
+			if (result.isOk()) {
+				expect(result.value).toHaveLength(0);
 			}
 		});
 	});
@@ -407,6 +536,74 @@ describe("AppointmentService", () => {
 
 			if (result.isErr()) {
 				expect(result.error.name).toBe("NotFoundError");
+			}
+		});
+	});
+
+	describe("appointment events", () => {
+		it("should create completed appointment event", async () => {
+			const created = await repository.create(makeAppointment());
+
+			expect(created.isOk()).toBe(true);
+
+			if (created.isOk()) {
+				const result = await service.createAppointmentEvent(created.value.id, {
+					status: "completed",
+					actualStartDate: "2026-03-01T10:05:00.000Z",
+					actualEndDate: "2026-03-01T11:05:00.000Z",
+					performedByUserId: BASE_USER_ID,
+				});
+
+				expect(result.isOk()).toBe(true);
+
+				if (result.isOk()) {
+					expect(result.value.appointmentId).toBe(created.value.id);
+					expect(result.value.status).toBe("completed");
+					expect(result.value.performedByUserId).toBe(BASE_USER_ID);
+				}
+			}
+		});
+
+		it("should fail when creating completed event without professional", async () => {
+			const created = await repository.create(makeAppointment());
+
+			expect(created.isOk()).toBe(true);
+
+			if (created.isOk()) {
+				const result = await service.createAppointmentEvent(created.value.id, {
+					status: "completed",
+					actualStartDate: "2026-03-01T10:00:00.000Z",
+					actualEndDate: "2026-03-01T11:00:00.000Z",
+				});
+
+				expect(result.isErr()).toBe(true);
+
+				if (result.isErr()) {
+					expect(result.error).toBeInstanceOf(ValidationError);
+				}
+			}
+		});
+
+		it("should fetch appointment events by appointment id", async () => {
+			const created = await repository.create(makeAppointment());
+
+			expect(created.isOk()).toBe(true);
+
+			if (created.isOk()) {
+				await service.createAppointmentEvent(created.value.id, {
+					status: "cancelled",
+				});
+
+				const result = await service.getAppointmentEventsByAppointmentId(
+					created.value.id,
+				);
+
+				expect(result.isOk()).toBe(true);
+
+				if (result.isOk()) {
+					expect(result.value).toHaveLength(1);
+					expect(result.value[0].status).toBe("cancelled");
+				}
 			}
 		});
 	});
