@@ -60,8 +60,28 @@ services:
     depends_on:
       - redis
 
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards-json:/etc/grafana/dashboards-json
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  grafana_data:
     driver: local

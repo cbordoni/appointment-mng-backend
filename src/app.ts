@@ -1,6 +1,7 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
+import prometheus from "elysia-prometheus";
 
 import { errorLoggerPlugin } from "@/common/http/error-logger.plugin";
 import { httpErrorMapperPlugin } from "@/common/http/http-error-mapper.plugin";
@@ -16,6 +17,7 @@ export const app = new Elysia()
 	.use(requestLoggerPlugin)
 	.use(httpErrorMapperPlugin)
 	.use(errorLoggerPlugin)
+	.use(prometheus())
 	.use(
 		openapi({
 			path: "/docs",

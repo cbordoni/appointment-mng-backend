@@ -1,0 +1,11 @@
+global:
+  # How frequently to scrape targets by default
+  scrape_interval: 15s 
+
+scrape_configs:
+  # A job name to identify this scraping task
+  - job_name: 'appointment-mng-backend'
+
+    # Configuration for statically defined targets
+    static_configs:
+      - targets: ['backend:3000']
