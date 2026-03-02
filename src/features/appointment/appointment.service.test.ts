@@ -2,33 +2,31 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import { ok } from "neverthrow";
 
 import { ValidationError } from "@/common/errors";
-import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler.interface";
+import type { IScheduler } from "../scheduler/scheduler.interface";
 import { MockAppointmentRepository } from "./appointment.repository.mock";
 import { AppointmentService } from "./appointment.service";
 import type { CreateAppointmentInput } from "./appointment.types";
 
 const BASE_USER_ID = "00000000-0000-0000-0000-000000000001";
 
-class MockAppointmentNotificationScheduler
-	implements IAppointmentNotificationScheduler
-{
+class MockAppointmentNotificationScheduler implements IScheduler {
 	public scheduledAppointmentIds: string[] = [];
 	public rescheduledAppointmentIds: string[] = [];
 	public clearedAppointmentIds: string[] = [];
 
-	async scheduleForAppointment(appointment: { id: string }) {
+	async schedule(appointment: { id: string }) {
 		this.scheduledAppointmentIds.push(appointment.id);
 
 		return ok(undefined);
 	}
 
-	async rescheduleForAppointment(appointment: { id: string }) {
+	async reschedule(appointment: { id: string }) {
 		this.rescheduledAppointmentIds.push(appointment.id);
 
 		return ok(undefined);
 	}
 
-	async clearForAppointment(appointmentId: string) {
+	async clear(appointmentId: string) {
 		this.clearedAppointmentIds.push(appointmentId);
 
 		return ok(undefined);

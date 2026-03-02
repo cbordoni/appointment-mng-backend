@@ -3,21 +3,10 @@ import { err, ok } from "neverthrow";
 import { ValidationError } from "@/common/errors";
 import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
-import type { PaginatedResponse } from "@/common/types";
-import type {
-	AsyncDomainResult,
-	DomainResult,
-} from "@/common/types/database-result";
-import type { Appointment } from "@/db/schema";
-
-import { NoopAppointmentNotificationScheduler } from "./appointment.notification.scheduler";
-import type { IAppointmentNotificationScheduler } from "./appointment.notification.scheduler.interface";
+import type { DomainResult } from "@/common/types/database-result";
+import type { IScheduler } from "../scheduler/scheduler.interface";
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
-	AppointmentEventWithSource,
-	AppointmentProjection,
-	AppointmentWithUser,
-	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	DateRangeQuery,
 	UpdateAppointmentInput,
@@ -26,83 +15,28 @@ import type {
 export class AppointmentService {
 	constructor(
 		private readonly repository: IAppointmentRepository,
-		private readonly scheduler: IAppointmentNotificationScheduler = new NoopAppointmentNotificationScheduler(),
+		private readonly scheduler: IScheduler,
 	) {}
 
 	private validateDates(
-		startDate: string | Date,
-		endDate: string | Date,
+		startDate: string,
+		endDate: string,
 	): DomainResult<void> {
 		const start = new Date(startDate);
 		const end = new Date(endDate);
 
-		if (start >= end) {
-			return err(new ValidationError("startDate must be before endDate"));
-		}
-
-		return ok(undefined);
+		return start >= end
+			? err(new ValidationError("startDate must be before endDate"))
+			: ok(undefined);
 	}
 
 	private validateTitle(title: string): DomainResult<void> {
-		if (title.trim().length === 0) {
-			return err(new ValidationError("Title cannot be empty"));
-		}
-
-		return ok(undefined);
+		return title.trim().length === 0
+			? err(new ValidationError("Title cannot be empty"))
+			: ok(undefined);
 	}
 
-	private validateAppointmentEventInput(
-		data: CreateAppointmentEventInput,
-	): DomainResult<void> {
-		const {
-			status,
-			newAppointmentId,
-			actualStartDate,
-			actualEndDate,
-			performedByUserId,
-		} = data;
-
-		if (status === "rescheduled" && !newAppointmentId) {
-			return err(
-				new ValidationError(
-					"newAppointmentId is required for rescheduled events",
-				),
-			);
-		}
-
-		if (
-			(actualStartDate && !actualEndDate) ||
-			(!actualStartDate && actualEndDate)
-		) {
-			return err(
-				new ValidationError(
-					"actualStartDate and actualEndDate must be provided together",
-				),
-			);
-		}
-
-		if (actualStartDate && actualEndDate) {
-			const dateValidation = this.validateDates(actualStartDate, actualEndDate);
-
-			if (dateValidation.isErr()) {
-				return err(dateValidation.error);
-			}
-		}
-
-		if (status === "completed" && !performedByUserId) {
-			return err(
-				new ValidationError(
-					"performedByUserId is required for completed events",
-				),
-			);
-		}
-
-		return ok(undefined);
-	}
-
-	async getAllAppointments(
-		query: DateRangeQuery = {},
-	): AsyncDomainResult<AppointmentWithUser[]> {
+	async getAllAppointments(query: DateRangeQuery = {}) {
 		const from = query.from ? new Date(query.from) : undefined;
 		const to = query.to ? new Date(query.to) : undefined;
 
@@ -116,11 +50,7 @@ export class AppointmentService {
 		});
 	}
 
-	async getAppointmentsByUserId(
-		userId: string,
-		page = 1,
-		limit = 10,
-	): AsyncDomainResult<PaginatedResponse<Appointment>> {
+	async getAppointmentsByUserId(userId: string, page = 1, limit = 10) {
 		logger.debug("Fetching appointments by user", { userId, page, limit });
 
 		const result = await this.repository.findByUserId(userId, page, limit);
@@ -136,60 +66,7 @@ export class AppointmentService {
 		});
 	}
 
-	async getProjectedAppointments(
-		query: DateRangeQuery = {},
-	): AsyncDomainResult<AppointmentProjection[]> {
-		const from = query.from ? new Date(query.from) : undefined;
-		const to = query.to ? new Date(query.to) : undefined;
-
-		logger.debug("Projecting recurring appointments", { from, to });
-
-		const result = await this.repository.findProjectedByDateRange(from, to);
-
-		return result.map((items) => {
-			logger.info("Recurring appointments projected successfully", {
-				count: items.length,
-			});
-
-			return items;
-		});
-	}
-
-	async getCalendarAppointments(
-		query: DateRangeQuery = {},
-	): AsyncDomainResult<AppointmentProjection[]> {
-		const from = query.from ? new Date(query.from) : undefined;
-		const to = query.to ? new Date(query.to) : undefined;
-
-		logger.debug("Fetching calendar appointments", { from, to });
-
-		const [nonRecurringResult, projectedResult] = await Promise.all([
-			this.repository.findNonRecurringByDateRange(from, to),
-			this.repository.findProjectedByDateRange(from, to),
-		]);
-
-		if (nonRecurringResult.isErr()) {
-			return err(nonRecurringResult.error);
-		}
-
-		if (projectedResult.isErr()) {
-			return err(projectedResult.error);
-		}
-
-		const items = [...nonRecurringResult.value, ...projectedResult.value].sort(
-			(left, right) => left.startDate.getTime() - right.startDate.getTime(),
-		);
-
-		return ok(items).map((calendarItems) => {
-			logger.info("Calendar appointments fetched successfully", {
-				count: calendarItems.length,
-			});
-
-			return calendarItems;
-		});
-	}
-
-	async getAppointmentById(id: string): AsyncDomainResult<Appointment> {
+	async getAppointmentById(id: string) {
 		logger.debug("Fetching appointment by id", { id });
 
 		const result = await this.repository.findById(id);
@@ -203,9 +80,7 @@ export class AppointmentService {
 		return result;
 	}
 
-	async createAppointment(
-		data: CreateAppointmentInput,
-	): AsyncDomainResult<Appointment> {
+	async createAppointment(data: CreateAppointmentInput) {
 		const { title, startDate, endDate, userId } = data;
 
 		logger.debug("Creating appointment", { userId });
@@ -230,7 +105,10 @@ export class AppointmentService {
 
 		const { value } = createResult;
 
-		const scheduleResult = await this.scheduler.scheduleForAppointment(value);
+		const scheduleResult = await this.scheduler.schedule({
+			id: value.id,
+			startDate: value.startDate,
+		});
 
 		if (scheduleResult.isErr()) {
 			logger.warn("Failed to schedule appointment notifications", {
@@ -245,10 +123,7 @@ export class AppointmentService {
 		});
 	}
 
-	async updateAppointment(
-		id: string,
-		data: UpdateAppointmentInput,
-	): AsyncDomainResult<Appointment> {
+	async updateAppointment(id: string, data: UpdateAppointmentInput) {
 		logger.debug("Updating appointment", { id });
 
 		if (data.title !== undefined) {
@@ -273,30 +148,33 @@ export class AppointmentService {
 			}
 		}
 
-		const updateResult = await this.repository.update(id, data);
+		const result = await this.repository.update(id, data);
 
-		if (updateResult.isErr()) {
-			return err(updateResult.error);
+		if (result.isErr()) {
+			return err(result.error);
 		}
 
-		const scheduleResult = await this.scheduler.rescheduleForAppointment(
-			updateResult.value,
-		);
+		const { value } = result;
+
+		const scheduleResult = await this.scheduler.reschedule({
+			id: value.id,
+			startDate: value.startDate,
+		});
 
 		if (scheduleResult.isErr()) {
 			logger.warn("Failed to reschedule appointment notifications", {
-				appointmentId: updateResult.value.id,
+				appointmentId: value.id,
 				error: scheduleResult.error.message,
 			});
 		}
 
-		return ok(updateResult.value).map((appointment) => {
+		return ok(value).map((appointment) => {
 			logger.info("Appointment updated successfully", { id });
 			return appointment;
 		});
 	}
 
-	async deleteAppointment(id: string): AsyncDomainResult<void> {
+	async deleteAppointment(id: string) {
 		logger.debug("Deleting appointment", { id });
 
 		const deleteResult = await this.repository.delete(id);
@@ -305,7 +183,7 @@ export class AppointmentService {
 			return err(deleteResult.error);
 		}
 
-		const clearResult = await this.scheduler.clearForAppointment(id);
+		const clearResult = await this.scheduler.clear(id);
 
 		if (clearResult.isErr()) {
 			logger.warn("Failed to clear appointment notifications", {
@@ -314,55 +192,8 @@ export class AppointmentService {
 			});
 		}
 
-		return ok(undefined).map(() => {
-			logger.info("Appointment deleted successfully", { id });
-			return undefined;
-		});
-	}
+		logger.info("Appointment deleted successfully", { id });
 
-	async createAppointmentEvent(
-		appointmentId: string,
-		data: CreateAppointmentEventInput,
-	): AsyncDomainResult<AppointmentEventWithSource> {
-		const validationResult = this.validateAppointmentEventInput(data);
-
-		if (validationResult.isErr()) {
-			return err(validationResult.error);
-		}
-
-		logger.debug("Creating appointment event", {
-			appointmentId,
-			status: data.status,
-		});
-
-		const result = await this.repository.createEvent(appointmentId, data);
-
-		return result.map((event) => {
-			logger.info("Appointment event created successfully", {
-				appointmentId,
-				eventId: event.id,
-				status: event.status,
-			});
-
-			return event;
-		});
-	}
-
-	async getAppointmentEventsByAppointmentId(
-		appointmentId: string,
-	): AsyncDomainResult<AppointmentEventWithSource[]> {
-		logger.debug("Fetching appointment events", { appointmentId });
-
-		const result =
-			await this.repository.findEventsByAppointmentId(appointmentId);
-
-		return result.map((events) => {
-			logger.info("Appointment events fetched successfully", {
-				appointmentId,
-				count: events.length,
-			});
-
-			return events;
-		});
+		return ok(undefined);
 	}
 }

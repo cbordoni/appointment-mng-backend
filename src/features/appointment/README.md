@@ -103,13 +103,15 @@ Prefixo: `/appointments`
 ## Estrutura da feature
 
 - `appointment.routes.ts`: definição de rotas Elysia
-- `appointment.controller.ts`: mapeamento `Result` para resposta HTTP
+- `crud/appointment.crud.controller.ts`: mapeamento HTTP para operações CRUD
+- `projection/appointment.projection.controller.ts`: mapeamento HTTP para projeções e calendário
+- `scheduling/appointment.scheduling.controller.ts`: mapeamento HTTP para eventos e histórico
 - `appointment.service.ts`: regras de negócio de agendamentos
 - `appointment.repository.ts`: acesso ao banco
 - `appointment.repository.interface.ts`: contrato de repositório
 - `appointment.repository.mock.ts`: mock para testes
-- `appointment.notification.scheduler.ts`: integração com BullMQ para notificações
-- `appointment.notification.scheduler.interface.ts`: contrato do scheduler
+- `notification/appointment.notification.scheduler.ts`: integração com BullMQ para notificações
+- `notification/appointment.notification.scheduler.interface.ts`: contrato do scheduler
 - `appointment.types.ts`: schemas e tipos de entrada
 
 ## Testes

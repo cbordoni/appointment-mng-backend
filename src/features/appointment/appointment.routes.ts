@@ -1,25 +1,19 @@
 import { Elysia, t } from "elysia";
 
 import { PaginationQuerySchema } from "@/common/types";
-
-import { AppointmentController } from "./appointment.controller";
-import { BullMqAppointmentNotificationScheduler } from "./appointment.notification.scheduler";
-import { AppointmentRepository } from "./appointment.repository";
-import { AppointmentService } from "./appointment.service";
+import { controller } from ".";
 import {
 	AppointmentIdSchema,
-	CreateAppointmentEventSchema,
 	CreateAppointmentSchema,
 	DateRangeQuerySchema,
 	UpdateAppointmentSchema,
 } from "./appointment.types";
-
-const repository = new AppointmentRepository();
-const notificationScheduler = new BullMqAppointmentNotificationScheduler();
-const service = new AppointmentService(repository, notificationScheduler);
-const controller = new AppointmentController(service);
+import { buildAppointmentEventRoutes } from "./event/event.routes";
+import { buildAppointmentProjectionRoutes } from "./projection/projection.routes";
 
 export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
+	.use(buildAppointmentProjectionRoutes())
+	.use(buildAppointmentEventRoutes())
 	.get(
 		"/",
 		async ({ query }) => {
@@ -43,59 +37,6 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 			query: PaginationQuerySchema,
 			detail: {
 				summary: "Get appointments by user ID",
-				tags: ["Appointments"],
-			},
-		},
-	)
-	.get(
-		"/projections",
-		async ({ query }) => {
-			return await controller.getProjected(query);
-		},
-		{
-			query: DateRangeQuerySchema,
-			detail: {
-				summary: "Get projected recurring appointments by date range",
-				tags: ["Appointments"],
-			},
-		},
-	)
-	.get(
-		"/calendar",
-		async ({ query }) => {
-			return await controller.getCalendar(query);
-		},
-		{
-			query: DateRangeQuerySchema,
-			detail: {
-				summary: "Get calendar items (non-recurring + recurring projections)",
-				tags: ["Appointments"],
-			},
-		},
-	)
-	.get(
-		"/:id/events",
-		async ({ params }) => {
-			return await controller.getEventsByAppointmentId(params.id);
-		},
-		{
-			params: AppointmentIdSchema,
-			detail: {
-				summary: "Get appointment events by appointment ID",
-				tags: ["Appointments"],
-			},
-		},
-	)
-	.post(
-		"/:id/events",
-		async ({ params, body }) => {
-			return await controller.createEvent(params.id, body);
-		},
-		{
-			params: AppointmentIdSchema,
-			body: CreateAppointmentEventSchema,
-			detail: {
-				summary: "Create event history for appointment",
 				tags: ["Appointments"],
 			},
 		},

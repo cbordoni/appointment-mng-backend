@@ -1,6 +1,6 @@
 import { logger } from "@/common/logger";
 import { syncDatabase } from "@/db";
-import { startAppointmentNotificationWorker } from "@/features/appointment/appointment.notification.scheduler";
+import { startAppointmentNotificationWorker } from "@/features/scheduler/worker";
 
 import { app } from "./app";
 

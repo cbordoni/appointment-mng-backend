@@ -3,7 +3,6 @@ import type { PaginationQuery } from "@/common/types";
 
 import type { AppointmentService } from "./appointment.service";
 import type {
-	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	DateRangeQuery,
 	UpdateAppointmentInput,
@@ -15,81 +14,45 @@ export class AppointmentController extends BaseController {
 	}
 
 	async getAll(query: DateRangeQuery) {
-		const result = await this.service.getAllAppointments(query);
-
-		return result.match((data) => ({ data }), this.handleError);
+		return (await this.service.getAllAppointments(query)).match(
+			(data) => ({ data }),
+			this.handleError,
+		);
 	}
 
 	async getAllByUserId(userId: string, query: PaginationQuery) {
 		const { page = 1, limit = 10 } = query;
 
-		const result = await this.service.getAppointmentsByUserId(
-			userId,
-			page,
-			limit,
-		);
-
-		return result.match((paginatedData) => paginatedData, this.handleError);
-	}
-
-	async getProjected(query: DateRangeQuery) {
-		const result = await this.service.getProjectedAppointments(query);
-
-		return result.match((data) => ({ data }), this.handleError);
-	}
-
-	async getCalendar(query: DateRangeQuery) {
-		const result = await this.service.getCalendarAppointments(query);
-
-		return result.match((data) => ({ data }), this.handleError);
+		return (
+			await this.service.getAppointmentsByUserId(userId, page, limit)
+		).match((data) => ({ data }), this.handleError);
 	}
 
 	async getById(id: string) {
-		const result = await this.service.getAppointmentById(id);
-
-		return result.match(
-			(appointment) => ({ data: appointment }),
+		return (await this.service.getAppointmentById(id)).match(
+			(data) => ({ data }),
 			this.handleError,
 		);
 	}
 
 	async create(data: CreateAppointmentInput) {
-		const result = await this.service.createAppointment(data);
-
-		return result.match(
-			(appointment) => ({ data: appointment }),
+		return (await this.service.createAppointment(data)).match(
+			(data) => ({ data }),
 			this.handleError,
 		);
 	}
 
 	async update(id: string, data: UpdateAppointmentInput) {
-		const result = await this.service.updateAppointment(id, data);
-
-		return result.match(
-			(appointment) => ({ data: appointment }),
+		return (await this.service.updateAppointment(id, data)).match(
+			(data) => ({ data }),
 			this.handleError,
 		);
 	}
 
 	async delete(id: string) {
-		const result = await this.service.deleteAppointment(id);
-
-		return result.match(() => ({ status: 204 }), this.handleError);
-	}
-
-	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {
-		const result = await this.service.createAppointmentEvent(
-			appointmentId,
-			data,
+		return (await this.service.deleteAppointment(id)).match(
+			() => ({ status: 204 }),
+			this.handleError,
 		);
-
-		return result.match((event) => ({ data: event }), this.handleError);
-	}
-
-	async getEventsByAppointmentId(appointmentId: string) {
-		const result =
-			await this.service.getAppointmentEventsByAppointmentId(appointmentId);
-
-		return result.match((events) => ({ data: events }), this.handleError);
 	}
 }
