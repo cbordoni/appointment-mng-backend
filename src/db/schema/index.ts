@@ -19,21 +19,17 @@ export const appointmentEventStatusEnum = pgEnum("appointment_event_status", [
 	"rescheduled",
 ]);
 
-export const users = pgTable("users", {
+export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
 	email: text("email").notNull().unique(),
 	cellphone: text("cellphone").notNull(),
-	role: text("role")
-		.notNull()
-		.default("customer")
-		.$type<"admin" | "customer">(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
+export type Client = typeof clients.$inferSelect;
+export type NewClient = typeof clients.$inferInsert;
 
 export const appointments = pgTable("appointments", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -44,9 +40,9 @@ export const appointments = pgTable("appointments", {
 	active: boolean("active").notNull().default(true),
 	deletedAt: timestamp("deleted_at"),
 	observation: text("observation"),
-	userId: uuid("user_id")
+	clientId: uuid("client_id")
 		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }),
+		.references(() => clients.id, { onDelete: "cascade" }),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -67,9 +63,12 @@ export const appointmentEvents = pgTable("appointment_events", {
 	originalEndDate: timestamp("original_end_date").notNull(),
 	actualStartDate: timestamp("actual_start_date"),
 	actualEndDate: timestamp("actual_end_date"),
-	performedByUserId: uuid("performed_by_user_id").references(() => users.id, {
-		onDelete: "set null",
-	}),
+	performedByClientId: uuid("performed_by_client_id").references(
+		() => clients.id,
+		{
+			onDelete: "set null",
+		},
+	),
 	newAppointmentId: uuid("new_appointment_id").references(
 		() => appointments.id,
 		{

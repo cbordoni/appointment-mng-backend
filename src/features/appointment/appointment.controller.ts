@@ -20,11 +20,11 @@ export class AppointmentController extends BaseController {
 		);
 	}
 
-	async getAllByUserId(userId: string, query: PaginationQuery) {
+	async getAllByClientId(clientId: string, query: PaginationQuery) {
 		const { page = 1, limit = 10 } = query;
 
 		return (
-			await this.service.getAppointmentsByUserId(userId, page, limit)
+			await this.service.getAppointmentsByClientId(clientId, page, limit)
 		).match((data) => ({ data }), this.handleError);
 	}
 

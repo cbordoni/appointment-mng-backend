@@ -7,8 +7,8 @@ import { errorLoggerPlugin } from "@/common/http/error-logger.plugin";
 import { httpErrorMapperPlugin } from "@/common/http/http-error-mapper.plugin";
 import { requestLoggerPlugin } from "@/common/http/request-logger.plugin";
 import { appointmentRoutes } from "@/features/appointment/appointment.routes";
+import { clientRoutes } from "@/features/client/client.routes";
 import { healthRoutes } from "@/features/health/health.routes";
-import { userRoutes } from "@/features/user/user.routes";
 
 const version = Bun.env.npm_package_version ?? "1.0.0";
 
@@ -28,7 +28,7 @@ export const app = new Elysia()
 					description: "A modern backend API built with Bun and Elysia",
 				},
 				tags: [
-					{ name: "Users", description: "User management endpoints" },
+					{ name: "Clients", description: "Client management endpoints" },
 					{
 						name: "Appointments",
 						description: "Appointment management endpoints",
@@ -44,5 +44,5 @@ export const app = new Elysia()
 		},
 	})
 	.use(healthRoutes)
-	.use(userRoutes)
+	.use(clientRoutes)
 	.use(appointmentRoutes);

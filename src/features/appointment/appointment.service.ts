@@ -37,7 +37,7 @@ export class AppointmentService {
 	}
 
 	private async validateProfessionalConflict(
-		userId: string,
+		clientId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -45,13 +45,13 @@ export class AppointmentService {
 		const [appointmentsConflictResult, projectionConflictResult] =
 			await Promise.all([
 				this.repository.hasConflictInAppointments(
-					userId,
+					clientId,
 					startDate,
 					endDate,
 					excludedAppointmentId,
 				),
 				this.repository.hasConflictInProjection(
-					userId,
+					clientId,
 					startDate,
 					endDate,
 					excludedAppointmentId,
@@ -91,14 +91,14 @@ export class AppointmentService {
 		});
 	}
 
-	async getAppointmentsByUserId(userId: string, page = 1, limit = 10) {
-		logger.debug("Fetching appointments by user", { userId, page, limit });
+	async getAppointmentsByClientId(clientId: string, page = 1, limit = 10) {
+		logger.debug("Fetching appointments by client", { clientId, page, limit });
 
-		const result = await this.repository.findByUserId(userId, page, limit);
+		const result = await this.repository.findByClientId(clientId, page, limit);
 
 		return result.map((data) => {
-			logger.info("User appointments fetched successfully", {
-				userId,
+			logger.info("Client appointments fetched successfully", {
+				clientId,
 				count: data.items.length,
 				total: data.total,
 			});
@@ -121,9 +121,9 @@ export class AppointmentService {
 	}
 
 	async createAppointment(data: CreateAppointmentInput) {
-		const { title, startDate, endDate, userId } = data;
+		const { title, startDate, endDate, clientId } = data;
 
-		logger.debug("Creating appointment", { userId });
+		logger.debug("Creating appointment", { clientId });
 
 		const validationResult = this.validateTitle(title)
 			// Validate dates only if both are provided
@@ -134,7 +134,7 @@ export class AppointmentService {
 		}
 
 		const conflictValidationResult = await this.validateProfessionalConflict(
-			userId,
+			clientId,
 			new Date(startDate),
 			new Date(endDate),
 		);
@@ -206,7 +206,7 @@ export class AppointmentService {
 		const endDate = new Date(data.endDate ?? currentAppointment.endDate);
 
 		const conflictValidationResult = await this.validateProfessionalConflict(
-			currentAppointment.userId,
+			currentAppointment.clientId,
 			startDate,
 			endDate,
 			id,

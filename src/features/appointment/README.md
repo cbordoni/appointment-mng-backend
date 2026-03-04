@@ -6,7 +6,7 @@ Responsável pelo ciclo de vida de agendamentos, projeções de recorrência e h
 
 - Criar, consultar, atualizar e remover agendamentos
 - Listar agendamentos por intervalo de datas
-- Listar agendamentos por usuário com paginação
+- Listar agendamentos por cliente com paginação
 - Projetar ocorrências de agendamentos recorrentes
 - Registrar e consultar eventos de histórico de agendamento
 - Orquestrar agendamento de notificações
@@ -21,13 +21,13 @@ Prefixo: `/appointments`
     - `to` (opcional, `date-time`)
   - Descrição: lista agendamentos por intervalo de datas
 
-- `GET /appointments/user/:userId`
+- `GET /appointments/client/:clientId`
   - Params:
-    - `userId` (UUID)
+    - `clientId` (UUID)
   - Query:
     - `page` (opcional, padrão: `1`)
     - `limit` (opcional, padrão: `10`)
-  - Descrição: lista agendamentos de um usuário com paginação
+  - Descrição: lista agendamentos de um cliente com paginação
 
 - `GET /appointments/projections`
   - Query:
@@ -57,7 +57,7 @@ Prefixo: `/appointments`
   "recurrence": "weekly",
   "active": true,
   "observation": "Levar exames",
-  "userId": "00000000-0000-0000-0000-000000000000"
+  "clientId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -99,7 +99,7 @@ Prefixo: `/appointments`
   "status": "rescheduled",
   "actualStartDate": "2026-03-02T10:05:00.000Z",
   "actualEndDate": "2026-03-02T11:05:00.000Z",
-  "performedByUserId": "00000000-0000-0000-0000-000000000000",
+  "performedByClientId": "00000000-0000-0000-0000-000000000000",
   "newAppointmentId": "00000000-0000-0000-0000-000000000000"
 }
 ```

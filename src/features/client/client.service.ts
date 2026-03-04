@@ -8,13 +8,13 @@ import {
 import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
-import type { User } from "@/db/schema";
+import type { Client } from "@/db/schema";
 
-import type { IUserRepository } from "./user.repository.interface";
-import type { CreateUserInput, UpdateUserInput } from "./user.types";
+import type { IClientRepository } from "./client.repository.interface";
+import type { CreateClientInput, UpdateClientInput } from "./client.types";
 
-export class UserService {
-	constructor(private readonly repository: IUserRepository) {}
+export class ClientService {
+	constructor(private readonly repository: IClientRepository) {}
 
 	private validateName(name: string): Result<void, ValidationError> {
 		return name.trim().length === 0
@@ -28,14 +28,14 @@ export class UserService {
 			: ok(undefined);
 	}
 
-	async getAllUsers(
+	async getAllClients(
 		page = 1,
 		limit = 10,
-	): Promise<Result<PaginatedResponse<User>, DatabaseError>> {
-		logger.debug("Fetching all users", { page, limit });
+	): Promise<Result<PaginatedResponse<Client>, DatabaseError>> {
+		logger.debug("Fetching all clients", { page, limit });
 
 		return (await this.repository.findAll(page, limit)).map((data) => {
-			logger.info("Users fetched successfully", {
+			logger.info("Clients fetched successfully", {
 				count: data.items.length,
 				total: data.total,
 				page,
@@ -45,52 +45,52 @@ export class UserService {
 		});
 	}
 
-	async getUserById(
+	async getClientById(
 		id: string,
-	): Promise<Result<User, NotFoundError | DatabaseError>> {
-		logger.debug("Fetching user by id", { id });
+	): Promise<Result<Client, NotFoundError | DatabaseError>> {
+		logger.debug("Fetching client by id", { id });
 
 		const result = await this.repository.findById(id);
 
 		result.match(
-			() => logger.info("User fetched successfully", { id }),
-			() => logger.warn("User not found", { id }),
+			() => logger.info("Client fetched successfully", { id }),
+			() => logger.warn("Client not found", { id }),
 		);
 
 		return result;
 	}
 
-	async createUser(
-		data: CreateUserInput,
-	): Promise<Result<User, ValidationError | DatabaseError>> {
-		logger.debug("Creating user", { email: data.email });
+	async createClient(
+		data: CreateClientInput,
+	): Promise<Result<Client, ValidationError | DatabaseError>> {
+		logger.debug("Creating client", { email: data.email });
 
 		const validationResult = this.validateName(data.name)
 			//
 			.andThen(() => this.validateCellphone(data.cellphone));
 
 		if (validationResult.isErr()) {
-			logger.warn("User creation failed: invalid input", {
+			logger.warn("Client creation failed: invalid input", {
 				reason: validationResult.error.message,
 			});
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.create(data)).map((user) => {
-			logger.info("User created successfully", {
-				id: user.id,
-				email: user.email,
+		return (await this.repository.create(data)).map((client) => {
+			logger.info("Client created successfully", {
+				id: client.id,
+				email: client.email,
 			});
 
-			return user;
+			return client;
 		});
 	}
 
-	async updateUser(
+	async updateClient(
 		id: string,
-		data: UpdateUserInput,
-	): Promise<Result<User, ValidationError | NotFoundError | DatabaseError>> {
-		logger.debug("Updating user", { id, fields: Object.keys(data) });
+		data: UpdateClientInput,
+	): Promise<Result<Client, ValidationError | NotFoundError | DatabaseError>> {
+		logger.debug("Updating client", { id, fields: Object.keys(data) });
 
 		const nameValidationResult =
 			data.name !== undefined ? this.validateName(data.name) : ok(undefined);
@@ -105,23 +105,23 @@ export class UserService {
 			.andThen(() => cellphoneValidationResult);
 
 		if (validationResult.isErr()) {
-			logger.warn("User update failed: invalid input", { id });
+			logger.warn("Client update failed: invalid input", { id });
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.update(id, data)).map((user) => {
-			logger.info("User updated successfully", { id });
-			return user;
+		return (await this.repository.update(id, data)).map((client) => {
+			logger.info("Client updated successfully", { id });
+			return client;
 		});
 	}
 
-	async deleteUser(
+	async deleteClient(
 		id: string,
 	): Promise<Result<void, NotFoundError | DatabaseError>> {
-		logger.debug("Deleting user", { id });
+		logger.debug("Deleting client", { id });
 
 		return (await this.repository.delete(id)).map(() => {
-			logger.info("User deleted successfully", { id });
+			logger.info("Client deleted successfully", { id });
 			return undefined;
 		});
 	}

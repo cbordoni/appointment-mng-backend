@@ -20,8 +20,8 @@ export const AppointmentEventStatusSchema = t.Union([
 
 export type AppointmentEventStatus = typeof AppointmentEventStatusSchema.static;
 
-export type AppointmentWithUser = Omit<Appointment, "userId"> & {
-	userName: string;
+export type AppointmentWithClient = Omit<Appointment, "clientId"> & {
+	clientName: string;
 };
 
 export type AppointmentProjection = {
@@ -31,7 +31,7 @@ export type AppointmentProjection = {
 	endDate: Date;
 	observation: string | null;
 	recurrence: AppointmentRecurrence;
-	userName: string;
+	clientName: string;
 };
 
 export const DateRangeQuerySchema = t.Object({
@@ -48,7 +48,7 @@ export const CreateAppointmentSchema = t.Object({
 	recurrence: t.Optional(RecurrenceSchema),
 	active: t.Optional(t.Boolean()),
 	observation: t.Optional(t.String()),
-	userId: t.String({ format: "uuid" }),
+	clientId: t.String({ format: "uuid" }),
 });
 
 export const UpdateAppointmentSchema = t.Object({
@@ -65,7 +65,7 @@ export const CreateAppointmentEventSchema = t.Object({
 	summary: t.Optional(t.Nullable(t.String())),
 	actualStartDate: t.Optional(t.String({ format: "date-time" })),
 	actualEndDate: t.Optional(t.String({ format: "date-time" })),
-	performedByUserId: t.Optional(t.String({ format: "uuid" })),
+	performedByClientId: t.Optional(t.String({ format: "uuid" })),
 	newAppointmentId: t.Optional(t.String({ format: "uuid" })),
 });
 

@@ -28,15 +28,15 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 		},
 	)
 	.get(
-		"/user/:userId",
+		"/client/:clientId",
 		async ({ params, query }) => {
-			return await controller.getAllByUserId(params.userId, query);
+			return await controller.getAllByClientId(params.clientId, query);
 		},
 		{
-			params: t.Object({ userId: t.String({ format: "uuid" }) }),
+			params: t.Object({ clientId: t.String({ format: "uuid" }) }),
 			query: PaginationQuerySchema,
 			detail: {
-				summary: "Get appointments by user ID",
+				summary: "Get appointments by client ID",
 				tags: ["Appointments"],
 			},
 		},

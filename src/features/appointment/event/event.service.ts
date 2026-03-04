@@ -38,7 +38,7 @@ export class AppointmentEventService {
 			newAppointmentId,
 			actualStartDate,
 			actualEndDate,
-			performedByUserId,
+			performedByClientId,
 		} = data;
 
 		if (status === "rescheduled" && !newAppointmentId) {
@@ -68,10 +68,10 @@ export class AppointmentEventService {
 			}
 		}
 
-		if (status === "completed" && !performedByUserId) {
+		if (status === "completed" && !performedByClientId) {
 			return err(
 				new ValidationError(
-					"performedByUserId is required for completed events",
+					"performedByClientId is required for completed events",
 				),
 			);
 		}

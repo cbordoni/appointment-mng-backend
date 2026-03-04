@@ -7,7 +7,7 @@ import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
 	AppointmentProjection,
-	AppointmentWithUser,
+	AppointmentWithClient,
 	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	UpdateAppointmentInput,
@@ -17,7 +17,7 @@ export class MockAppointmentRepository
 	extends BaseInMemoryRepository<Appointment>
 	implements IAppointmentRepository
 {
-	private usersMap = new Map<string, string>();
+	private clientsMap = new Map<string, string>();
 	private events: AppointmentEvent[] = [];
 
 	private addRecurrenceDate(date: Date, recurrence: "weekly" | "monthly") {
@@ -37,8 +37,8 @@ export class MockAppointmentRepository
 		return "Appointment";
 	}
 
-	setUsersMap(map: Map<string, string>) {
-		this.usersMap = map;
+	setClientsMap(map: Map<string, string>) {
+		this.clientsMap = map;
 	}
 
 	async findAll(page: number, limit: number) {
@@ -52,7 +52,7 @@ export class MockAppointmentRepository
 	async findByDateRange(
 		from?: Date,
 		to?: Date,
-	): Promise<Result<AppointmentWithUser[], never>> {
+	): Promise<Result<AppointmentWithClient[], never>> {
 		const filtered = this.items.filter((a) => {
 			if (a.deletedAt) return false;
 
@@ -63,9 +63,9 @@ export class MockAppointmentRepository
 			return true;
 		});
 
-		const result = filtered.map(({ userId, ...rest }) => ({
+		const result = filtered.map(({ clientId, ...rest }) => ({
 			...rest,
-			userName: this.usersMap.get(userId) ?? "Unknown",
+			clientName: this.clientsMap.get(clientId) ?? "Unknown",
 		}));
 
 		return ok(result);
@@ -95,14 +95,14 @@ export class MockAppointmentRepository
 				endDate: appointment.endDate,
 				observation: appointment.observation,
 				recurrence: appointment.recurrence,
-				userName: this.usersMap.get(appointment.userId) ?? "Unknown",
+				clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
 			})),
 		);
 	}
 
-	async findByUserId(userId: string, page: number, limit: number) {
+	async findByClientId(clientId: string, page: number, limit: number) {
 		const filtered = this.items.filter((a) => {
-			return a.userId === userId && !a.deletedAt;
+			return a.clientId === clientId && !a.deletedAt;
 		});
 		const offset = (page - 1) * limit;
 		const items = filtered.slice(offset, offset + limit);
@@ -120,7 +120,7 @@ export class MockAppointmentRepository
 			active: data.active ?? true,
 			deletedAt: null,
 			observation: data.observation ?? null,
-			userId: data.userId,
+			clientId: data.clientId,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
@@ -212,7 +212,7 @@ export class MockAppointmentRepository
 						endDate: new Date(currentEnd),
 						observation: appointment.observation,
 						recurrence: appointment.recurrence,
-						userName: this.usersMap.get(appointment.userId) ?? "Unknown",
+						clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
 					});
 				}
 
@@ -233,7 +233,7 @@ export class MockAppointmentRepository
 	}
 
 	async hasConflictInAppointments(
-		userId: string,
+		clientId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -247,7 +247,7 @@ export class MockAppointmentRepository
 				return false;
 			}
 
-			if (appointment.userId !== userId) {
+			if (appointment.clientId !== clientId) {
 				return false;
 			}
 
@@ -262,7 +262,7 @@ export class MockAppointmentRepository
 	}
 
 	async hasConflictInProjection(
-		userId: string,
+		clientId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -272,7 +272,7 @@ export class MockAppointmentRepository
 				continue;
 			}
 
-			if (appointment.userId !== userId) {
+			if (appointment.clientId !== clientId) {
 				continue;
 			}
 
@@ -293,7 +293,10 @@ export class MockAppointmentRepository
 					return ok(true);
 				}
 
-				currentStart = this.addRecurrenceDate(currentStart, appointment.recurrence);
+				currentStart = this.addRecurrenceDate(
+					currentStart,
+					appointment.recurrence,
+				);
 				currentEnd = this.addRecurrenceDate(currentEnd, appointment.recurrence);
 				guard += 1;
 			}
@@ -320,7 +323,7 @@ export class MockAppointmentRepository
 				? new Date(data.actualStartDate)
 				: null,
 			actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : null,
-			performedByUserId: data.performedByUserId ?? null,
+			performedByClientId: data.performedByClientId ?? null,
 			newAppointmentId: data.newAppointmentId ?? null,
 			createdAt: new Date(),
 			updatedAt: new Date(),

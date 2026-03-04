@@ -1,1 +1,0 @@
-ALTER TABLE "appointments" ADD COLUMN "active" boolean DEFAULT true NOT NULL;

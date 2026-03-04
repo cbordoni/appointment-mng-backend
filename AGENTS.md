@@ -35,12 +35,12 @@ Este documento define as regras e padrões que **todos os agentes (humanos ou IA
 ```text
 src/
 ├── features/
-│   ├── user/
-│   │   ├── user.controller.ts
-│   │   ├── user.service.ts
-│   │   ├── user.repository.ts
-│   │   ├── user.routes.ts
-│   │   └── user.types.ts
+│   ├── client/
+│   │   ├── client.controller.ts
+│   │   ├── client.service.ts
+│   │   ├── client.repository.ts
+│   │   ├── client.routes.ts
+│   │   └── client.types.ts
 │   └── auth/
 │       ├── auth.controller.ts
 │       ├── auth.service.ts
@@ -129,7 +129,7 @@ function createUser(input: CreateUserInput): Result<User, DomainError> {
 ```ts
 import { t } from "elysia";
 
-app.post("/users", handler, {
+app.post("/clients", handler, {
   body: t.Object({
     email: t.String({ format: "email" }),
     password: t.String({ minLength: 8 }),
@@ -148,7 +148,7 @@ Schemas podem ser:
 - `app.ts` apenas registra plugins e rotas
 
 ```ts
-app.use(userRoutes);
+app.use(clientsRoutes);
 app.use(authRoutes);
 ```
 

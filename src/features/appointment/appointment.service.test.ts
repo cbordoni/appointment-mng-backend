@@ -9,7 +9,7 @@ import type { CreateAppointmentInput } from "./appointment.types";
 import { AppointmentEventService } from "./event/event.service";
 import { AppointmentProjectionService } from "./projection/projection.service";
 
-const BASE_USER_ID = "00000000-0000-0000-0000-000000000001";
+const BASE_CLIENT_ID = "00000000-0000-0000-0000-000000000001";
 
 class MockAppointmentNotificationScheduler implements IScheduler {
 	public scheduledAppointmentIds: string[] = [];
@@ -41,7 +41,7 @@ const makeAppointment = (
 	title: "Therapy Session",
 	startDate: "2026-03-01T10:00:00.000Z",
 	endDate: "2026-03-01T11:00:00.000Z",
-	userId: BASE_USER_ID,
+	clientId: BASE_CLIENT_ID,
 	...overrides,
 });
 
@@ -58,7 +58,7 @@ describe("AppointmentService", () => {
 		service = new AppointmentService(repository, notificationScheduler);
 		projectionService = new AppointmentProjectionService(repository);
 		eventService = new AppointmentEventService(repository);
-		repository.setUsersMap(new Map([[BASE_USER_ID, "John Doe"]]));
+		repository.setClientsMap(new Map([[BASE_CLIENT_ID, "John Doe"]]));
 	});
 
 	describe("getAllAppointments", () => {
@@ -72,7 +72,7 @@ describe("AppointmentService", () => {
 
 			if (result.isOk()) {
 				expect(result.value).toHaveLength(2);
-				expect(result.value[0].userName).toBe("John Doe");
+				expect(result.value[0].clientName).toBe("John Doe");
 			}
 		});
 
@@ -104,7 +104,7 @@ describe("AppointmentService", () => {
 			if (result.isOk()) {
 				expect(result.value).toHaveLength(1);
 				expect(result.value[0].title).toBe("Therapy Session");
-				expect(result.value[0].userName).toBe("John Doe");
+				expect(result.value[0].clientName).toBe("John Doe");
 			}
 		});
 
@@ -164,25 +164,29 @@ describe("AppointmentService", () => {
 			if (result.isOk()) {
 				expect(result.value).toHaveLength(1);
 				expect(result.value[0].title).toBe("February");
-				expect(result.value[0].userName).toBe("John Doe");
+				expect(result.value[0].clientName).toBe("John Doe");
 			}
 		});
 	});
 
-	describe("getAppointmentsByUserId", () => {
-		it("should return only appointments for the given user", async () => {
-			const otherUserId = "00000000-0000-0000-0000-000000000002";
+	describe("getAppointmentsByClientId", () => {
+		it("should return only appointments for the given client", async () => {
+			const otherClientId = "00000000-0000-0000-0000-000000000002";
 
 			await repository.create(makeAppointment());
-			await repository.create(makeAppointment({ userId: otherUserId }));
+			await repository.create(makeAppointment({ clientId: otherClientId }));
 
-			const result = await service.getAppointmentsByUserId(BASE_USER_ID, 1, 10);
+			const result = await service.getAppointmentsByClientId(
+				BASE_CLIENT_ID,
+				1,
+				10,
+			);
 
 			expect(result.isOk()).toBe(true);
 
 			if (result.isOk()) {
 				expect(result.value.data).toHaveLength(1);
-				expect(result.value.data[0].userId).toBe(BASE_USER_ID);
+				expect(result.value.data[0].clientId).toBe(BASE_CLIENT_ID);
 			}
 		});
 	});
@@ -356,7 +360,7 @@ describe("AppointmentService", () => {
 			if (result.isOk()) {
 				expect(result.value.title).toBe("Therapy Session");
 				expect(result.value.observation).toBe("First session");
-				expect(result.value.userId).toBe(BASE_USER_ID);
+				expect(result.value.clientId).toBe(BASE_CLIENT_ID);
 				expect(result.value.id).toBeDefined();
 				expect(notificationScheduler.scheduledAppointmentIds).toEqual([
 					result.value.id,
@@ -682,7 +686,7 @@ describe("AppointmentService", () => {
 						status: "completed",
 						actualStartDate: "2026-03-01T10:05:00.000Z",
 						actualEndDate: "2026-03-01T11:05:00.000Z",
-						performedByUserId: BASE_USER_ID,
+						performedByClientId: BASE_CLIENT_ID,
 					},
 				);
 
@@ -691,7 +695,7 @@ describe("AppointmentService", () => {
 				if (result.isOk()) {
 					expect(result.value.appointmentId).toBe(created.value.id);
 					expect(result.value.status).toBe("completed");
-					expect(result.value.performedByUserId).toBe(BASE_USER_ID);
+					expect(result.value.performedByClientId).toBe(BASE_CLIENT_ID);
 				}
 			}
 		});

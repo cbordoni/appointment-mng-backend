@@ -2,28 +2,27 @@ import { beforeEach, describe, expect, it } from "bun:test";
 
 import { ValidationError } from "@/common/errors";
 
-import { MockUserRepository } from "./user.repository.mock";
-import { UserService } from "./user.service";
-import type { CreateUserInput, UpdateUserInput } from "./user.types";
+import { MockClientRepository } from "./client.repository.mock";
+import { ClientService } from "./client.service";
+import type { CreateClientInput, UpdateClientInput } from "./client.types";
 
-describe("UserService", () => {
-	let userService: UserService;
-	let mockRepository: MockUserRepository;
+describe("ClientService", () => {
+	let clientService: ClientService;
+	let mockRepository: MockClientRepository;
 
 	beforeEach(() => {
-		mockRepository = new MockUserRepository();
-		userService = new UserService(mockRepository);
+		mockRepository = new MockClientRepository();
+		clientService = new ClientService(mockRepository);
 	});
 
-	describe("getAllUsers", () => {
-		it("should return paginated users successfully", async () => {
-			const mockUsers = [
+	describe("getAllClients", () => {
+		it("should return paginated clients successfully", async () => {
+			const mockClients = [
 				{
 					id: "1",
 					name: "John Doe",
 					email: "john@example.com",
 					cellphone: "1234567890",
-					role: "customer" as const,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
@@ -32,15 +31,14 @@ describe("UserService", () => {
 					name: "Jane Doe",
 					email: "jane@example.com",
 					cellphone: "0987654321",
-					role: "customer" as const,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
 			];
 
-			mockRepository.setUsers(mockUsers);
+			mockRepository.setClients(mockClients);
 
-			const result = await userService.getAllUsers(1, 10);
+			const result = await clientService.getAllClients(1, 10);
 
 			expect(result.isOk()).toBe(true);
 
@@ -55,20 +53,19 @@ describe("UserService", () => {
 		});
 
 		it("should handle pagination correctly", async () => {
-			const mockUsers = Array.from({ length: 25 }, (_, i) => ({
+			const mockClients = Array.from({ length: 25 }, (_, i) => ({
 				id: `${i + 1}`,
-				name: `User ${i + 1}`,
-				email: `user${i + 1}@example.com`,
+				name: `Client ${i + 1}`,
+				email: `client${i + 1}@example.com`,
 				cellphone: "1234567890",
-				role: "customer" as const,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			}));
 
-			mockRepository.setUsers(mockUsers);
+			mockRepository.setClients(mockClients);
 
-			const resultPage1 = await userService.getAllUsers(1, 10);
-			const resultPage2 = await userService.getAllUsers(2, 10);
+			const resultPage1 = await clientService.getAllClients(1, 10);
+			const resultPage2 = await clientService.getAllClients(2, 10);
 
 			expect(resultPage1.isOk()).toBe(true);
 			expect(resultPage2.isOk()).toBe(true);
@@ -80,10 +77,10 @@ describe("UserService", () => {
 			}
 		});
 
-		it("should return empty array when no users exist", async () => {
-			mockRepository.clearUsers();
+		it("should return empty array when no clients exist", async () => {
+			mockRepository.clearClients();
 
-			const result = await userService.getAllUsers(1, 10);
+			const result = await clientService.getAllClients(1, 10);
 
 			expect(result.isOk()).toBe(true);
 
@@ -94,21 +91,20 @@ describe("UserService", () => {
 		});
 	});
 
-	describe("getUserById", () => {
-		it("should return user when id exists", async () => {
-			const mockUser = {
+	describe("getClientById", () => {
+		it("should return client when id exists", async () => {
+			const mockClient = {
 				id: "123",
 				name: "John Doe",
 				email: "john@example.com",
 				cellphone: "1234567890",
-				role: "customer" as const,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
 
-			mockRepository.setUsers([mockUser]);
+			mockRepository.setClients([mockClient]);
 
-			const result = await userService.getUserById("123");
+			const result = await clientService.getClientById("123");
 
 			expect(result.isOk()).toBe(true);
 
@@ -120,9 +116,9 @@ describe("UserService", () => {
 		});
 
 		it("should return NotFoundError when id does not exist", async () => {
-			mockRepository.clearUsers();
+			mockRepository.clearClients();
 
-			const result = await userService.getUserById("nonexistent");
+			const result = await clientService.getClientById("nonexistent");
 
 			expect(result.isErr()).toBe(true);
 
@@ -132,37 +128,35 @@ describe("UserService", () => {
 		});
 	});
 
-	describe("createUser", () => {
-		it("should create user successfully with valid data", async () => {
-			const input: CreateUserInput = {
+	describe("createClient", () => {
+		it("should create client successfully with valid data", async () => {
+			const input: CreateClientInput = {
 				name: "John Doe",
 				email: "john@example.com",
 				cellphone: "11987654321",
-				role: "customer",
 			};
 
-			const result = await userService.createUser(input);
+			const result = await clientService.createClient(input);
 
 			expect(result.isOk()).toBe(true);
 
 			if (result.isOk()) {
-				const user = result.value;
-				expect(user.name).toBe("John Doe");
-				expect(user.email).toBe("john@example.com");
-				expect(user.cellphone).toBe("11987654321");
-				expect(user.id).toBeDefined();
+				const client = result.value;
+				expect(client.name).toBe("John Doe");
+				expect(client.email).toBe("john@example.com");
+				expect(client.cellphone).toBe("11987654321");
+				expect(client.id).toBeDefined();
 			}
 		});
 
 		it("should fail when name is empty", async () => {
-			const input: CreateUserInput = {
+			const input: CreateClientInput = {
 				name: "   ",
 				email: "john@example.com",
 				cellphone: "11987654321",
-				role: "customer",
 			};
 
-			const result = await userService.createUser(input);
+			const result = await clientService.createClient(input);
 
 			expect(result.isErr()).toBe(true);
 
@@ -173,14 +167,13 @@ describe("UserService", () => {
 		});
 
 		it("should fail when cellphone is invalid", async () => {
-			const input: CreateUserInput = {
+			const input: CreateClientInput = {
 				name: "John Doe",
 				email: "john@example.com",
 				cellphone: "123", // Too short
-				role: "customer",
 			};
 
-			const result = await userService.createUser(input);
+			const result = await clientService.createClient(input);
 
 			expect(result.isErr()).toBe(true);
 
@@ -191,41 +184,39 @@ describe("UserService", () => {
 		});
 
 		it("should accept cellphone with formatting", async () => {
-			const input: CreateUserInput = {
+			const input: CreateClientInput = {
 				name: "John Doe",
 				email: "john@example.com",
 				cellphone: "(11) 98765-4321",
-				role: "customer",
 			};
 
-			const result = await userService.createUser(input);
+			const result = await clientService.createClient(input);
 
 			expect(result.isOk()).toBe(true);
 		});
 	});
 
-	describe("updateUser", () => {
+	describe("updateClient", () => {
 		beforeEach(() => {
-			const mockUser = {
+			const mockClient = {
 				id: "123",
 				name: "John Doe",
 				email: "john@example.com",
 				cellphone: "11987654321",
-				role: "customer" as const,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
 
-			mockRepository.setUsers([mockUser]);
+			mockRepository.setClients([mockClient]);
 		});
 
-		it("should update user successfully", async () => {
-			const input: UpdateUserInput = {
+		it("should update client successfully", async () => {
+			const input: UpdateClientInput = {
 				name: "Jane Doe",
 				email: "jane@example.com",
 			};
 
-			const result = await userService.updateUser("123", input);
+			const result = await clientService.updateClient("123", input);
 
 			expect(result.isOk()).toBe(true);
 
@@ -236,11 +227,11 @@ describe("UserService", () => {
 		});
 
 		it("should fail when updating with empty name", async () => {
-			const input: UpdateUserInput = {
+			const input: UpdateClientInput = {
 				name: "   ",
 			};
 
-			const result = await userService.updateUser("123", input);
+			const result = await clientService.updateClient("123", input);
 
 			expect(result.isErr()).toBe(true);
 
@@ -251,11 +242,11 @@ describe("UserService", () => {
 		});
 
 		it("should fail when updating with invalid cellphone", async () => {
-			const input: UpdateUserInput = {
+			const input: UpdateClientInput = {
 				cellphone: "123",
 			};
 
-			const result = await userService.updateUser("123", input);
+			const result = await clientService.updateClient("123", input);
 
 			expect(result.isErr()).toBe(true);
 
@@ -265,12 +256,12 @@ describe("UserService", () => {
 			}
 		});
 
-		it("should fail when user does not exist", async () => {
-			const input: UpdateUserInput = {
+		it("should fail when client does not exist", async () => {
+			const input: UpdateClientInput = {
 				name: "Jane Doe",
 			};
 
-			const result = await userService.updateUser("nonexistent", input);
+			const result = await clientService.updateClient("nonexistent", input);
 
 			expect(result.isErr()).toBe(true);
 
@@ -280,11 +271,11 @@ describe("UserService", () => {
 		});
 
 		it("should allow partial updates", async () => {
-			const input: UpdateUserInput = {
+			const input: UpdateClientInput = {
 				name: "Jane Doe",
 			};
 
-			const result = await userService.updateUser("123", input);
+			const result = await clientService.updateClient("123", input);
 
 			expect(result.isOk()).toBe(true);
 
@@ -295,33 +286,32 @@ describe("UserService", () => {
 		});
 	});
 
-	describe("deleteUser", () => {
+	describe("deleteClient", () => {
 		beforeEach(() => {
-			const mockUser = {
+			const mockClient = {
 				id: "123",
 				name: "John Doe",
 				email: "john@example.com",
 				cellphone: "11987654321",
-				role: "customer" as const,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
 
-			mockRepository.setUsers([mockUser]);
+			mockRepository.setClients([mockClient]);
 		});
 
-		it("should delete user successfully", async () => {
-			const result = await userService.deleteUser("123");
+		it("should delete client successfully", async () => {
+			const result = await clientService.deleteClient("123");
 
 			expect(result.isOk()).toBe(true);
 
-			// Verify user was deleted
-			const getResult = await userService.getUserById("123");
+			// Verify client was deleted
+			const getResult = await clientService.getClientById("123");
 			expect(getResult.isErr()).toBe(true);
 		});
 
-		it("should fail when user does not exist", async () => {
-			const result = await userService.deleteUser("nonexistent");
+		it("should fail when client does not exist", async () => {
+			const result = await clientService.deleteClient("nonexistent");
 
 			expect(result.isErr()).toBe(true);
 
