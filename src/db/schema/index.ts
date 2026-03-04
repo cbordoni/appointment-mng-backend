@@ -9,20 +9,16 @@ import {
 
 export const recurrenceEnum = pgEnum("appointment_recurrence", [
 	"none",
+	"daily",
 	"weekly",
 	"monthly",
-]);
-
-export const appointmentEventStatusEnum = pgEnum("appointment_event_status", [
-	"completed",
-	"cancelled",
-	"rescheduled",
 ]);
 
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
-	cellphone: text("cellphone").notNull(),
+	taxId: text("tax_id").notNull().unique(),
+	phone: text("phone").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -63,35 +59,3 @@ export const appointments = pgTable("appointments", {
 
 export type Appointment = typeof appointments.$inferSelect;
 export type NewAppointment = typeof appointments.$inferInsert;
-
-export type AppointmentRecurrence = (typeof recurrenceEnum.enumValues)[number];
-
-export const appointmentEvents = pgTable("appointment_events", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	appointmentId: uuid("appointment_id")
-		.notNull()
-		.references(() => appointments.id, { onDelete: "cascade" }),
-	status: appointmentEventStatusEnum("status").notNull(),
-	summary: text("summary"),
-	originalStartDate: timestamp("original_start_date").notNull(),
-	originalEndDate: timestamp("original_end_date").notNull(),
-	actualStartDate: timestamp("actual_start_date"),
-	actualEndDate: timestamp("actual_end_date"),
-	performedByClientId: uuid("performed_by_client_id").references(
-		() => clients.id,
-		{
-			onDelete: "set null",
-		},
-	),
-	newAppointmentId: uuid("new_appointment_id").references(
-		() => appointments.id,
-		{
-			onDelete: "set null",
-		},
-	),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export type AppointmentEvent = typeof appointmentEvents.$inferSelect;
-export type NewAppointmentEvent = typeof appointmentEvents.$inferInsert;

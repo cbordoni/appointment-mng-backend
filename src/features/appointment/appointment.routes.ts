@@ -8,12 +8,8 @@ import {
 	DateRangeQuerySchema,
 	UpdateAppointmentSchema,
 } from "./appointment.types";
-import { buildAppointmentEventRoutes } from "./event/event.routes";
-import { buildAppointmentProjectionRoutes } from "./projection/projection.routes";
 
 export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
-	.use(buildAppointmentProjectionRoutes())
-	.use(buildAppointmentEventRoutes())
 	.get(
 		"/",
 		async ({ query }) => {

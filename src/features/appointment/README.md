@@ -1,14 +1,12 @@
 # Appointment Feature
 
-Responsável pelo ciclo de vida de agendamentos, projeções de recorrência e histórico de eventos.
+Responsável pelo ciclo de vida de agendamentos.
 
 ## Responsabilidades
 
 - Criar, consultar, atualizar e remover agendamentos
 - Listar agendamentos por intervalo de datas
 - Listar agendamentos por cliente com paginação
-- Projetar ocorrências de agendamentos recorrentes
-- Registrar e consultar eventos de histórico de agendamento
 - Orquestrar agendamento de notificações
 
 ## Endpoints
@@ -28,18 +26,6 @@ Prefixo: `/appointments`
     - `page` (opcional, padrão: `1`)
     - `limit` (opcional, padrão: `10`)
   - Descrição: lista agendamentos de um cliente com paginação
-
-- `GET /appointments/projections`
-  - Query:
-    - `from` (opcional, `date-time`)
-    - `to` (opcional, `date-time`)
-  - Descrição: retorna projeções de agendamentos recorrentes no intervalo
-
-- `GET /appointments/calendar`
-  - Query:
-    - `from` (opcional, `date-time`)
-    - `to` (opcional, `date-time`)
-  - Descrição: retorna calendário combinando agendamentos não recorrentes e projeções recorrentes
 
 - `GET /appointments/:id`
   - Params:
@@ -86,28 +72,6 @@ Prefixo: `/appointments`
     - `id` (UUID)
   - Descrição: realiza exclusão lógica (soft delete), marcando o registro como deletado
 
-- `GET /appointments/:id/events`
-  - Params:
-    - `id` (UUID)
-  - Descrição: lista histórico de eventos do agendamento
-
-- `POST /appointments/:id/events`
-  - Params:
-    - `id` (UUID)
-  - Body:
-
-```json
-{
-  "status": "rescheduled",
-  "actualStartDate": "2026-03-02T10:05:00.000Z",
-  "actualEndDate": "2026-03-02T11:05:00.000Z",
-  "performedByClientId": "00000000-0000-0000-0000-000000000000",
-  "newAppointmentId": "00000000-0000-0000-0000-000000000000"
-}
-```
-
-  - `status`: `completed | cancelled | rescheduled`
-
 ## Estrutura da feature
 
 - `appointment.routes.ts`: definição de rotas Elysia
@@ -118,16 +82,6 @@ Prefixo: `/appointments`
 - `appointment.repository.interface.ts`: contrato de repositório
 - `appointment.repository.mock.ts`: mock para testes
 - `appointment.types.ts`: schemas e tipos de entrada
-- `event/`
-  - `event.routes.ts`: rotas de histórico de eventos
-  - `event.controller.ts`: mapeamento HTTP para eventos
-  - `event.service.ts`: regras de negócio de eventos de agendamento
-  - `index.ts`: composição interna do módulo de eventos
-- `projection/`
-  - `projection.routes.ts`: rotas de projeções e calendário
-  - `projection.controller.ts`: mapeamento HTTP para projeções
-  - `projection.service.ts`: regras de negócio de projeções recorrentes
-  - `index.ts`: composição interna do módulo de projeções
 
 ## Integração com scheduler
 

@@ -42,31 +42,19 @@ export class AppointmentService {
 		endDate: Date,
 		excludedAppointmentId?: string,
 	): Promise<DomainResult<void>> {
-		const [appointmentsConflictResult, projectionConflictResult] =
-			await Promise.all([
-				this.repository.hasConflictInAppointments(
-					professionalId,
-					startDate,
-					endDate,
-					excludedAppointmentId,
-				),
-				this.repository.hasConflictInProjection(
-					professionalId,
-					startDate,
-					endDate,
-					excludedAppointmentId,
-				),
-			]);
+		const appointmentsConflictResult =
+			await this.repository.hasConflictInAppointments(
+				professionalId,
+				startDate,
+				endDate,
+				excludedAppointmentId,
+			);
 
 		if (appointmentsConflictResult.isErr()) {
 			return err(appointmentsConflictResult.error);
 		}
 
-		if (projectionConflictResult.isErr()) {
-			return err(projectionConflictResult.error);
-		}
-
-		if (appointmentsConflictResult.value || projectionConflictResult.value) {
+		if (appointmentsConflictResult.value) {
 			return err(
 				new ValidationError(
 					"Professional has scheduling conflict for the selected period",

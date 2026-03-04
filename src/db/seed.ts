@@ -29,17 +29,20 @@ const clientsSeedData: NewClient[] = [
 	{
 		id: clientIds.joana,
 		name: "Joana Silva",
-		cellphone: "+55 (11) 98888-1111",
+		taxId: "12345678900",
+		phone: "+55 (11) 98888-1111",
 	},
 	{
 		id: clientIds.carlos,
 		name: "Carlos Souza",
-		cellphone: "+55 (11) 97777-2222",
+		taxId: "98765432100",
+		phone: "+55 (11) 97777-2222",
 	},
 	{
 		id: clientIds.marina,
 		name: "Marina Lima",
-		cellphone: "+55 (11) 96666-3333",
+		taxId: "11223344567",
+		phone: "+55 (11) 96666-3333",
 	},
 ] as const;
 
