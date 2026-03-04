@@ -1,10 +1,6 @@
 import { t } from "elysia";
 
-import type {
-	Appointment,
-	AppointmentEvent,
-	AppointmentRecurrence,
-} from "@/db/schema";
+import type { Appointment } from "@/db/schema";
 
 export const RecurrenceSchema = t.Union([
 	t.Literal("none"),
@@ -12,26 +8,7 @@ export const RecurrenceSchema = t.Union([
 	t.Literal("monthly"),
 ]);
 
-export const AppointmentEventStatusSchema = t.Union([
-	t.Literal("completed"),
-	t.Literal("cancelled"),
-	t.Literal("rescheduled"),
-]);
-
-export type AppointmentEventStatus = typeof AppointmentEventStatusSchema.static;
-
 export type AppointmentWithClient = Appointment & {
-	clientName: string;
-	professionalName: string;
-};
-
-export type AppointmentProjection = {
-	sourceAppointmentId: string;
-	title: string;
-	startDate: Date;
-	endDate: Date;
-	observation: string | null;
-	recurrence: AppointmentRecurrence;
 	clientName: string;
 	professionalName: string;
 };
@@ -64,19 +41,6 @@ export const UpdateAppointmentSchema = t.Object({
 	professionalId: t.Optional(t.String({ format: "uuid" })),
 });
 
-export const CreateAppointmentEventSchema = t.Object({
-	status: AppointmentEventStatusSchema,
-	summary: t.Optional(t.Nullable(t.String())),
-	actualStartDate: t.Optional(t.String({ format: "date-time" })),
-	actualEndDate: t.Optional(t.String({ format: "date-time" })),
-	performedByClientId: t.Optional(t.String({ format: "uuid" })),
-	newAppointmentId: t.Optional(t.String({ format: "uuid" })),
-});
-
-export const AppointmentHistoryQuerySchema = t.Object({
-	appointmentId: t.String({ format: "uuid" }),
-});
-
 export const AppointmentIdSchema = t.Object({
 	id: t.String({ format: "uuid" }),
 });
@@ -84,9 +48,3 @@ export const AppointmentIdSchema = t.Object({
 export type CreateAppointmentInput = typeof CreateAppointmentSchema.static;
 export type UpdateAppointmentInput = typeof UpdateAppointmentSchema.static;
 export type AppointmentIdInput = typeof AppointmentIdSchema.static;
-export type CreateAppointmentEventInput =
-	typeof CreateAppointmentEventSchema.static;
-export type AppointmentHistoryQueryInput =
-	typeof AppointmentHistoryQuerySchema.static;
-
-export type AppointmentEventWithSource = AppointmentEvent;

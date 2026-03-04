@@ -8,12 +8,8 @@ import {
 	DateRangeQuerySchema,
 	UpdateAppointmentSchema,
 } from "./appointment.types";
-import { buildAppointmentEventRoutes } from "./event/event.routes";
-import { buildAppointmentProjectionRoutes } from "./projection/projection.routes";
 
 export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
-	.use(buildAppointmentProjectionRoutes())
-	.use(buildAppointmentEventRoutes())
 	.get(
 		"/",
 		async ({ query }) => {
@@ -37,6 +33,23 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 			query: PaginationQuerySchema,
 			detail: {
 				summary: "Get appointments by client ID",
+				tags: ["Appointments"],
+			},
+		},
+	)
+	.get(
+		"/professional/:professionalId",
+		async ({ params, query }) => {
+			return await controller.getAllByProfessionalId(
+				params.professionalId,
+				query,
+			);
+		},
+		{
+			params: t.Object({ professionalId: t.String({ format: "uuid" }) }),
+			query: PaginationQuerySchema,
+			detail: {
+				summary: "Get appointments by professional ID",
 				tags: ["Appointments"],
 			},
 		},

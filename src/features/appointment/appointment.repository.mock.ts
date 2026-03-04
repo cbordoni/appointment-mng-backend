@@ -1,14 +1,14 @@
 import { err, ok, type Result } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
-import type { Appointment, AppointmentEvent } from "@/db/schema";
+import type { PaginatedResult } from "@/common/types";
+import type { AsyncDomainResult } from "@/common/types/database-result";
+import type { Appointment } from "@/db/schema";
 import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
 
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
-	AppointmentProjection,
 	AppointmentWithClient,
-	CreateAppointmentEventInput,
 	CreateAppointmentInput,
 	UpdateAppointmentInput,
 } from "./appointment.types";
@@ -17,22 +17,22 @@ export class MockAppointmentRepository
 	extends BaseInMemoryRepository<Appointment>
 	implements IAppointmentRepository
 {
+	async findByProfessionalId(
+		professionalId: string,
+		page: number,
+		limit: number,
+	): AsyncDomainResult<PaginatedResult<Appointment>> {
+		const filtered = this.items.filter((a) => {
+			return a.professionalId === professionalId && !a.deletedAt;
+		});
+
+		const offset = (page - 1) * limit;
+		const items = filtered.slice(offset, offset + limit);
+
+		return ok({ items, total: filtered.length });
+	}
 	private clientsMap = new Map<string, string>();
 	private professionalsMap = new Map<string, string>();
-	private events: AppointmentEvent[] = [];
-
-	private addRecurrenceDate(date: Date, recurrence: "weekly" | "monthly") {
-		const nextDate = new Date(date);
-
-		if (recurrence === "weekly") {
-			nextDate.setDate(nextDate.getDate() + 7);
-			return nextDate;
-		}
-
-		nextDate.setMonth(nextDate.getMonth() + 1);
-
-		return nextDate;
-	}
 
 	protected get entityName(): string {
 		return "Appointment";
@@ -76,37 +76,6 @@ export class MockAppointmentRepository
 		}));
 
 		return ok(result);
-	}
-
-	async findNonRecurringByDateRange(
-		from?: Date,
-		to?: Date,
-	): Promise<Result<AppointmentProjection[], never>> {
-		const filtered = this.items.filter((appointment) => {
-			if (appointment.deletedAt) return false;
-
-			if (appointment.recurrence !== "none") return false;
-
-			if (from && appointment.startDate < from) return false;
-
-			if (to && appointment.startDate > to) return false;
-
-			return true;
-		});
-
-		return ok(
-			filtered.map((appointment) => ({
-				sourceAppointmentId: appointment.id,
-				title: appointment.title,
-				startDate: appointment.startDate,
-				endDate: appointment.endDate,
-				observation: appointment.observation,
-				recurrence: appointment.recurrence,
-				clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
-				professionalName:
-					this.professionalsMap.get(appointment.professionalId) ?? "Unknown",
-			})),
-		);
 	}
 
 	async findByClientId(clientId: string, page: number, limit: number) {
@@ -194,60 +163,6 @@ export class MockAppointmentRepository
 		}));
 	}
 
-	async findProjectedByDateRange(
-		from?: Date,
-		to?: Date,
-	): Promise<Result<AppointmentProjection[], never>> {
-		const rangeStart = from ?? new Date();
-		const rangeEnd =
-			to ?? new Date(rangeStart.getTime() + 1000 * 60 * 60 * 24 * 90);
-		const projected: AppointmentProjection[] = [];
-
-		for (const appointment of this.items) {
-			if (
-				appointment.deletedAt ||
-				appointment.recurrence === "none" ||
-				!appointment.active
-			) {
-				continue;
-			}
-
-			let currentStart = new Date(appointment.startDate);
-			let currentEnd = new Date(appointment.endDate);
-			let guard = 0;
-
-			while (currentStart <= rangeEnd && guard < 600) {
-				if (currentStart >= rangeStart) {
-					projected.push({
-						sourceAppointmentId: appointment.id,
-						title: appointment.title,
-						startDate: new Date(currentStart),
-						endDate: new Date(currentEnd),
-						observation: appointment.observation,
-						recurrence: appointment.recurrence,
-						clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
-						professionalName:
-							this.professionalsMap.get(appointment.professionalId) ??
-							"Unknown",
-					});
-				}
-
-				currentStart = this.addRecurrenceDate(
-					currentStart,
-					appointment.recurrence,
-				);
-				currentEnd = this.addRecurrenceDate(currentEnd, appointment.recurrence);
-				guard += 1;
-			}
-		}
-
-		projected.sort((left, right) => {
-			return left.startDate.getTime() - right.startDate.getTime();
-		});
-
-		return ok(projected);
-	}
-
 	async hasConflictInAppointments(
 		professionalId: string,
 		startDate: Date,
@@ -277,87 +192,6 @@ export class MockAppointmentRepository
 		return ok(hasConflict);
 	}
 
-	async hasConflictInProjection(
-		professionalId: string,
-		startDate: Date,
-		endDate: Date,
-		excludedAppointmentId?: string,
-	) {
-		for (const appointment of this.items) {
-			if (appointment.deletedAt || !appointment.active) {
-				continue;
-			}
-
-			if (appointment.professionalId !== professionalId) {
-				continue;
-			}
-
-			if (appointment.recurrence === "none") {
-				continue;
-			}
-
-			if (excludedAppointmentId && appointment.id === excludedAppointmentId) {
-				continue;
-			}
-
-			let currentStart = new Date(appointment.startDate);
-			let currentEnd = new Date(appointment.endDate);
-			let guard = 0;
-
-			while (currentStart < endDate && guard < 600) {
-				if (currentStart < endDate && currentEnd > startDate) {
-					return ok(true);
-				}
-
-				currentStart = this.addRecurrenceDate(
-					currentStart,
-					appointment.recurrence,
-				);
-				currentEnd = this.addRecurrenceDate(currentEnd, appointment.recurrence);
-				guard += 1;
-			}
-		}
-
-		return ok(false);
-	}
-
-	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {
-		const appointmentResult = await this.findById(appointmentId);
-
-		if (appointmentResult.isErr()) {
-			return err(appointmentResult.error);
-		}
-
-		const event: AppointmentEvent = {
-			id: crypto.randomUUID(),
-			appointmentId,
-			status: data.status,
-			summary: data.summary ?? null,
-			originalStartDate: appointmentResult.value.startDate,
-			originalEndDate: appointmentResult.value.endDate,
-			actualStartDate: data.actualStartDate
-				? new Date(data.actualStartDate)
-				: null,
-			actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : null,
-			performedByClientId: data.performedByClientId ?? null,
-			newAppointmentId: data.newAppointmentId ?? null,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		this.events.push(event);
-
-		return ok(event);
-	}
-
-	async findEventsByAppointmentId(
-		appointmentId: string,
-	): Promise<Result<AppointmentEvent[], never>> {
-		return ok(
-			this.events.filter((event) => event.appointmentId === appointmentId),
-		);
-	}
-
 	async delete(id: string) {
 		const result = await this.updateAtIndex(id, (current) => ({
 			...current,
@@ -375,6 +209,5 @@ export class MockAppointmentRepository
 
 	clearAppointments() {
 		this.clearItems();
-		this.events = [];
 	}
 }

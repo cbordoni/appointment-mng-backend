@@ -42,31 +42,19 @@ export class AppointmentService {
 		endDate: Date,
 		excludedAppointmentId?: string,
 	): Promise<DomainResult<void>> {
-		const [appointmentsConflictResult, projectionConflictResult] =
-			await Promise.all([
-				this.repository.hasConflictInAppointments(
-					professionalId,
-					startDate,
-					endDate,
-					excludedAppointmentId,
-				),
-				this.repository.hasConflictInProjection(
-					professionalId,
-					startDate,
-					endDate,
-					excludedAppointmentId,
-				),
-			]);
+		const appointmentsConflictResult =
+			await this.repository.hasConflictInAppointments(
+				professionalId,
+				startDate,
+				endDate,
+				excludedAppointmentId,
+			);
 
 		if (appointmentsConflictResult.isErr()) {
 			return err(appointmentsConflictResult.error);
 		}
 
-		if (projectionConflictResult.isErr()) {
-			return err(projectionConflictResult.error);
-		}
-
-		if (appointmentsConflictResult.value || projectionConflictResult.value) {
+		if (appointmentsConflictResult.value) {
 			return err(
 				new ValidationError(
 					"Professional has scheduling conflict for the selected period",
@@ -99,6 +87,34 @@ export class AppointmentService {
 		return result.map((data) => {
 			logger.info("Client appointments fetched successfully", {
 				clientId,
+				count: data.items.length,
+				total: data.total,
+			});
+
+			return toPaginated(data, page, limit);
+		});
+	}
+
+	async getAppointmentsByProfessionalId(
+		professionalId: string,
+		page = 1,
+		limit = 10,
+	) {
+		logger.debug("Fetching appointments by professional", {
+			professionalId,
+			page,
+			limit,
+		});
+
+		const result = await this.repository.findByProfessionalId(
+			professionalId,
+			page,
+			limit,
+		);
+
+		return result.map((data) => {
+			logger.info("Professional appointments fetched successfully", {
+				professionalId,
 				count: data.items.length,
 				total: data.total,
 			});
