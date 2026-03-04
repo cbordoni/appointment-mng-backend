@@ -14,45 +14,56 @@ export class AppointmentController extends BaseController {
 	}
 
 	async getAll(query: DateRangeQuery) {
-		return (await this.service.getAllAppointments(query)).match(
-			(data) => ({ data }),
-			this.handleError,
-		);
+		const result = await this.service.getAllAppointments(query);
+
+		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async getAllByClientId(clientId: string, query: PaginationQuery) {
 		const { page = 1, limit = 10 } = query;
 
-		return (
-			await this.service.getAppointmentsByClientId(clientId, page, limit)
-		).match((data) => ({ data }), this.handleError);
+		const result = await this.service.getAppointmentsByClientId(
+			clientId,
+			page,
+			limit,
+		);
+
+		return result.match((data) => ({ data }), this.handleError);
+	}
+
+	async getAllByProfessionalId(professionalId: string, query: PaginationQuery) {
+		const { page = 1, limit = 10 } = query;
+
+		const result = await this.service.getAppointmentsByProfessionalId(
+			professionalId,
+			page,
+			limit,
+		);
+
+		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async getById(id: string) {
-		return (await this.service.getAppointmentById(id)).match(
-			(data) => ({ data }),
-			this.handleError,
-		);
+		const result = await this.service.getAppointmentById(id);
+
+		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async create(data: CreateAppointmentInput) {
-		return (await this.service.createAppointment(data)).match(
-			(data) => ({ data }),
-			this.handleError,
-		);
+		const result = await this.service.createAppointment(data);
+
+		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async update(id: string, data: UpdateAppointmentInput) {
-		return (await this.service.updateAppointment(id, data)).match(
-			(data) => ({ data }),
-			this.handleError,
-		);
+		const result = await this.service.updateAppointment(id, data);
+
+		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async delete(id: string) {
-		return (await this.service.deleteAppointment(id)).match(
-			() => ({ status: 204 }),
-			this.handleError,
-		);
+		const result = await this.service.deleteAppointment(id);
+
+		return result.match(() => ({ status: 204 }), this.handleError);
 	}
 }

@@ -38,6 +38,23 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 		},
 	)
 	.get(
+		"/professional/:professionalId",
+		async ({ params, query }) => {
+			return await controller.getAllByProfessionalId(
+				params.professionalId,
+				query,
+			);
+		},
+		{
+			params: t.Object({ professionalId: t.String({ format: "uuid" }) }),
+			query: PaginationQuerySchema,
+			detail: {
+				summary: "Get appointments by professional ID",
+				tags: ["Appointments"],
+			},
+		},
+	)
+	.get(
 		"/:id",
 		async ({ params }) => {
 			return await controller.getById(params.id);

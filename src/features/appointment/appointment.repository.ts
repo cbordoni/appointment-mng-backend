@@ -111,6 +111,33 @@ export class AppointmentRepository implements IAppointmentRepository {
 		}, "Failed to fetch appointments by client");
 	}
 
+	async findByProfessionalId(
+		professionalId: string,
+		page: number,
+		limit: number,
+	) {
+		return wrapDatabaseOperation(async () => {
+			const offset = (page - 1) * limit;
+
+			const conditions = and(
+				eq(appointments.professionalId, professionalId),
+				isNull(appointments.deletedAt),
+			);
+
+			const [items, total] = await Promise.all([
+				db
+					.select()
+					.from(appointments)
+					.where(conditions)
+					.limit(limit)
+					.offset(offset),
+				getTableCount(appointments, conditions),
+			]);
+
+			return { items, total };
+		}, "Failed to fetch appointments by professional");
+	}
+
 	async create(data: CreateAppointmentInput) {
 		const result = await wrapDatabaseOperation(
 			() =>

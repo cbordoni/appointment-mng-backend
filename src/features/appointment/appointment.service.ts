@@ -95,6 +95,34 @@ export class AppointmentService {
 		});
 	}
 
+	async getAppointmentsByProfessionalId(
+		professionalId: string,
+		page = 1,
+		limit = 10,
+	) {
+		logger.debug("Fetching appointments by professional", {
+			professionalId,
+			page,
+			limit,
+		});
+
+		const result = await this.repository.findByProfessionalId(
+			professionalId,
+			page,
+			limit,
+		);
+
+		return result.map((data) => {
+			logger.info("Professional appointments fetched successfully", {
+				professionalId,
+				count: data.items.length,
+				total: data.total,
+			});
+
+			return toPaginated(data, page, limit);
+		});
+	}
+
 	async getAppointmentById(id: string) {
 		logger.debug("Fetching appointment by id", { id });
 

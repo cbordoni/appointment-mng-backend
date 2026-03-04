@@ -1,6 +1,8 @@
 import { err, ok, type Result } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
+import type { PaginatedResult } from "@/common/types";
+import type { AsyncDomainResult } from "@/common/types/database-result";
 import type { Appointment } from "@/db/schema";
 import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
 
@@ -15,6 +17,20 @@ export class MockAppointmentRepository
 	extends BaseInMemoryRepository<Appointment>
 	implements IAppointmentRepository
 {
+	async findByProfessionalId(
+		professionalId: string,
+		page: number,
+		limit: number,
+	): AsyncDomainResult<PaginatedResult<Appointment>> {
+		const filtered = this.items.filter((a) => {
+			return a.professionalId === professionalId && !a.deletedAt;
+		});
+
+		const offset = (page - 1) * limit;
+		const items = filtered.slice(offset, offset + limit);
+
+		return ok({ items, total: filtered.length });
+	}
 	private clientsMap = new Map<string, string>();
 	private professionalsMap = new Map<string, string>();
 
