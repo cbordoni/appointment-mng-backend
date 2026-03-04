@@ -37,18 +37,22 @@ Prefixo: `/appointments`
 
 ```json
 {
+  "uid": "consult-001@clinic.local",
   "summary": "Consulta",
-  "startDate": "2026-03-02T10:00:00.000Z",
-  "endDate": "2026-03-02T11:00:00.000Z",
+  "description": "Levar exames",
+  "dtstart": "2026-03-02T10:00:00.000Z",
+  "dtend": "2026-03-02T11:00:00.000Z",
+  "timezone": "America/Sao_Paulo",
   "rrule": "FREQ=WEEKLY;BYDAY=MO",
-  "active": true,
-  "observation": "Levar exames",
+  "status": "CONFIRMED",
+  "sequence": 0,
   "clientId": "00000000-0000-0000-0000-000000000000",
   "professionalId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
   - `rrule` (opcional): string no formato RFC 5545 (`FREQ=...;...`)
+  - Exceções e overrides de recorrência são gerenciados em features específicas (`appointment-exception` e `appointment-override`), não no CRUD base de `appointment`
 
 - `PATCH /appointments/:id`
   - Params:
@@ -58,11 +62,11 @@ Prefixo: `/appointments`
 ```json
 {
   "summary": "Consulta de retorno",
-  "startDate": "2026-03-09T10:00:00.000Z",
-  "endDate": "2026-03-09T11:00:00.000Z",
+  "dtstart": "2026-03-09T10:00:00.000Z",
+  "dtend": "2026-03-09T11:00:00.000Z",
   "rrule": "FREQ=MONTHLY;BYMONTHDAY=9",
-  "active": false,
-  "observation": null,
+  "status": "TENTATIVE",
+  "description": null,
   "professionalId": "00000000-0000-0000-0000-000000000000"
 }
 ```
@@ -82,6 +86,11 @@ Prefixo: `/appointments`
 - `appointment.repository.interface.ts`: contrato de repositório
 - `appointment.repository.mock.ts`: mock para testes
 - `appointment.types.ts`: schemas e tipos de entrada
+
+## Features relacionadas
+
+- Exceções de recorrência (`EXDATE`): `src/features/appointment-exception`
+- Overrides de recorrência (`RECURRENCE-ID`): `src/features/appointment-override`
 
 ## Integração com scheduler
 

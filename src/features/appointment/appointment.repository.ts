@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, isNull, lt, lte, ne } from "drizzle-orm";
+import { and, eq, gt, gte, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
@@ -38,22 +38,26 @@ export class AppointmentRepository implements IAppointmentRepository {
 				isNull(appointments.deletedAt),
 				isNull(clients.deletedAt),
 				isNull(professionals.deletedAt),
-				from ? gte(appointments.startDate, from) : undefined,
-				to ? lte(appointments.startDate, to) : undefined,
+				from ? gte(appointments.dtstart, from) : undefined,
+				to ? lte(appointments.dtstart, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;
 
 			const baseQuery = db
 				.select({
 					id: appointments.id,
+					uid: appointments.uid,
 					summary: appointments.summary,
-					startDate: appointments.startDate,
-					endDate: appointments.endDate,
+					description: appointments.description,
+					dtstart: appointments.dtstart,
+					dtend: appointments.dtend,
+					timezone: appointments.timezone,
 					clientId: appointments.clientId,
 					professionalId: appointments.professionalId,
-					active: appointments.active,
 					rrule: appointments.rrule,
+					status: appointments.status,
+					sequence: appointments.sequence,
+					dtstamp: appointments.dtstamp,
 					deletedAt: appointments.deletedAt,
-					observation: appointments.observation,
 					clientName: clients.name,
 					professionalName: professionals.name,
 					createdAt: appointments.createdAt,
@@ -74,7 +78,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 	async findById(id: string) {
 		const result = await wrapDatabaseOperation(
-			() =>
+			async () =>
 				db
 					.select()
 					.from(appointments)
@@ -82,13 +86,17 @@ export class AppointmentRepository implements IAppointmentRepository {
 			"Failed to fetch appointment",
 		);
 
-		return result.andThen(([appointment]) => {
-			if (!appointment) {
-				return err(new NotFoundError("Appointment", id));
-			}
+		if (result.isErr()) {
+			return err(result.error);
+		}
 
-			return ok(appointment);
-		});
+		const [appointment] = result.value;
+
+		if (!appointment) {
+			return err(new NotFoundError("Appointment", id));
+		}
+
+		return ok(appointment);
 	}
 
 	async findByClientId(clientId: string, page: number, limit: number) {
@@ -141,62 +149,84 @@ export class AppointmentRepository implements IAppointmentRepository {
 	}
 
 	async create(data: CreateAppointmentInput) {
-		const result = await wrapDatabaseOperation(
-			() =>
-				db
-					.insert(appointments)
-					.values({
-						summary: data.summary,
-						startDate: new Date(data.startDate),
-						endDate: new Date(data.endDate),
-						rrule: data.rrule ?? null,
-						active: data.active ?? true,
-						deletedAt: null,
-						observation: data.observation ?? null,
-						clientId: data.clientId,
-						professionalId: data.professionalId,
-					})
-					.returning(),
-			"Failed to create appointment",
-		);
+		const createResult = await wrapDatabaseOperation(async () => {
+			const appointmentId = crypto.randomUUID();
+			const uid = data.uid ?? `${appointmentId}@appointment.local`;
 
-		return result.map(([appointment]) => appointment);
+			const [appointment] = await db
+				.insert(appointments)
+				.values({
+					id: appointmentId,
+					uid,
+					summary: data.summary,
+					description: data.description ?? null,
+					dtstart: new Date(data.dtstart),
+					dtend: new Date(data.dtend),
+					timezone: data.timezone ?? "UTC",
+					rrule: data.rrule ?? null,
+					status: data.status ?? "CONFIRMED",
+					sequence: data.sequence ?? 0,
+					dtstamp: new Date(),
+					deletedAt: null,
+					clientId: data.clientId,
+					professionalId: data.professionalId,
+				})
+				.returning();
+
+			return appointment;
+		}, "Failed to create appointment");
+
+		if (createResult.isErr()) {
+			return err(createResult.error);
+		}
+
+		return ok(createResult.value);
 	}
 
 	async update(id: string, data: UpdateAppointmentInput) {
-		const result = await wrapDatabaseOperation(
-			() =>
-				db
-					.update(appointments)
-					.set({
-						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.summary !== undefined && { summary: data.summary }),
-						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.startDate !== undefined && { startDate: new Date(data.startDate), }),
-						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.endDate !== undefined && { endDate: new Date(data.endDate), }),
-						// biome-ignore format: to avoid breaking the conditional properties
-						...("rrule" in data && { rrule: data.rrule ?? null }),
-						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.active !== undefined && { active: data.active }),
-						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.observation !== undefined && { observation: data.observation }),
-						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.professionalId !== undefined && { professionalId: data.professionalId }),
-						updatedAt: new Date(),
-					})
-					.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
-					.returning(),
-			"Failed to update appointment",
-		);
+		const updateResult = await wrapDatabaseOperation(async () => {
+			const [appointment] = await db
+				.update(appointments)
+				.set({
+					...(data.uid !== undefined && { uid: data.uid }),
+					...(data.summary !== undefined && { summary: data.summary }),
+					...(data.description !== undefined && {
+						description: data.description,
+					}),
+					...(data.dtstart !== undefined && {
+						dtstart: new Date(data.dtstart),
+					}),
+					...(data.dtend !== undefined && { dtend: new Date(data.dtend) }),
+					...(data.timezone !== undefined && { timezone: data.timezone }),
+					...("rrule" in data && { rrule: data.rrule ?? null }),
+					...(data.status !== undefined && { status: data.status }),
+					...(data.sequence !== undefined && { sequence: data.sequence }),
+					...(data.sequence === undefined && {
+						sequence: sql`${appointments.sequence} + 1`,
+					}),
+					...(data.professionalId !== undefined && {
+						professionalId: data.professionalId,
+					}),
+					dtstamp: new Date(),
+					updatedAt: new Date(),
+				})
+				.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
+				.returning();
 
-		return result.andThen(([appointment]) => {
-			if (!appointment) {
-				return err(new NotFoundError("Appointment", id));
-			}
+			return appointment;
+		}, "Failed to update appointment");
 
-			return ok(appointment);
-		});
+		if (updateResult.isErr()) {
+			return err(updateResult.error);
+		}
+
+		const appointment = updateResult.value;
+
+		if (!appointment) {
+			return err(new NotFoundError("Appointment", id));
+		}
+
+		return ok(appointment);
 	}
 
 	async delete(id: string) {
@@ -205,7 +235,9 @@ export class AppointmentRepository implements IAppointmentRepository {
 				db
 					.update(appointments)
 					.set({
-						active: false,
+						status: "CANCELLED",
+						sequence: sql`${appointments.sequence} + 1`,
+						dtstamp: new Date(),
 						deletedAt: new Date(),
 						updatedAt: new Date(),
 					})
@@ -225,8 +257,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 	async hasConflictInAppointments(
 		professionalId: string,
-		startDate: Date,
-		endDate: Date,
+		dtstart: Date,
+		dtend: Date,
 		excludedAppointmentId?: string,
 	) {
 		return wrapDatabaseOperation(async () => {
@@ -236,10 +268,10 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 			const conditions = [
 				eq(appointments.professionalId, professionalId),
-				eq(appointments.active, true),
+				ne(appointments.status, "CANCELLED"),
 				isNull(appointments.deletedAt),
-				lt(appointments.startDate, endDate),
-				gt(appointments.endDate, startDate),
+				lt(appointments.dtstart, dtend),
+				gt(appointments.dtend, dtstart),
 				exclusionCondition,
 			].filter(Boolean) as Parameters<typeof and>;
 

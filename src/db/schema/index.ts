@@ -1,4 +1,11 @@
-import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+	integer,
+	pgTable,
+	text,
+	timestamp,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -28,13 +35,17 @@ export type NewProfessional = typeof professionals.$inferInsert;
 
 export const appointments = pgTable("appointments", {
 	id: uuid("id").primaryKey().defaultRandom(),
+	uid: text("uid").notNull().unique(),
 	summary: text("summary").notNull(),
-	startDate: timestamp("start_date").notNull(),
-	endDate: timestamp("end_date").notNull(),
+	description: text("description"),
+	dtstart: timestamp("dtstart").notNull(),
+	dtend: timestamp("dtend").notNull(),
+	timezone: text("timezone").notNull().default("UTC"),
 	rrule: text("rrule"),
-	active: boolean("active").notNull().default(true),
+	status: text("status").notNull().default("CONFIRMED"),
+	sequence: integer("sequence").notNull().default(0),
+	dtstamp: timestamp("dtstamp").defaultNow().notNull(),
 	deletedAt: timestamp("deleted_at"),
-	observation: text("observation"),
 	clientId: uuid("client_id")
 		.notNull()
 		.references(() => clients.id, { onDelete: "cascade" }),
@@ -45,5 +56,57 @@ export const appointments = pgTable("appointments", {
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const appointmentExdates = pgTable(
+	"appointment_exdates",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		appointmentId: uuid("appointment_id")
+			.notNull()
+			.references(() => appointments.id, { onDelete: "cascade" }),
+		exdate: timestamp("exdate").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [
+		uniqueIndex("appointment_exdates_appointment_exdate_unique").on(
+			table.appointmentId,
+			table.exdate,
+		),
+	],
+);
+
+export const appointmentOverrides = pgTable(
+	"appointment_overrides",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		appointmentId: uuid("appointment_id")
+			.notNull()
+			.references(() => appointments.id, { onDelete: "cascade" }),
+		recurrenceId: timestamp("recurrence_id").notNull(),
+		summary: text("summary"),
+		description: text("description"),
+		dtstart: timestamp("dtstart"),
+		dtend: timestamp("dtend"),
+		status: text("status"),
+		professionalId: uuid("professional_id").references(() => professionals.id, {
+			onDelete: "set null",
+		}),
+		sequence: integer("sequence").notNull().default(0),
+		dtstamp: timestamp("dtstamp").defaultNow().notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [
+		uniqueIndex("appointment_overrides_appointment_recurrence_unique").on(
+			table.appointmentId,
+			table.recurrenceId,
+		),
+	],
+);
+
 export type Appointment = typeof appointments.$inferSelect;
 export type NewAppointment = typeof appointments.$inferInsert;
+export type AppointmentExdate = typeof appointmentExdates.$inferSelect;
+export type NewAppointmentExdate = typeof appointmentExdates.$inferInsert;
+export type AppointmentOverride = typeof appointmentOverrides.$inferSelect;
+export type NewAppointmentOverride = typeof appointmentOverrides.$inferInsert;

@@ -61,9 +61,9 @@ export class MockAppointmentRepository
 		const filtered = this.items.filter((a) => {
 			if (a.deletedAt) return false;
 
-			if (from && a.startDate < from) return false;
+			if (from && a.dtstart < from) return false;
 
-			if (to && a.startDate > to) return false;
+			if (to && a.dtstart > to) return false;
 
 			return true;
 		});
@@ -89,15 +89,21 @@ export class MockAppointmentRepository
 	}
 
 	async create(data: CreateAppointmentInput) {
+		const id = crypto.randomUUID();
+
 		const appointment: Appointment = {
-			id: crypto.randomUUID(),
+			id,
+			uid: data.uid ?? `${id}@appointment.local`,
 			summary: data.summary,
-			startDate: new Date(data.startDate),
-			endDate: new Date(data.endDate),
+			description: data.description ?? null,
+			dtstart: new Date(data.dtstart),
+			dtend: new Date(data.dtend),
+			timezone: data.timezone ?? "UTC",
 			rrule: data.rrule ?? null,
-			active: data.active ?? true,
+			status: data.status ?? "CONFIRMED",
+			sequence: data.sequence ?? 0,
+			dtstamp: new Date(),
 			deletedAt: null,
-			observation: data.observation ?? null,
 			clientId: data.clientId,
 			professionalId: data.professionalId,
 			createdAt: new Date(),
@@ -146,27 +152,40 @@ export class MockAppointmentRepository
 	}
 
 	async update(id: string, data: UpdateAppointmentInput) {
-		return this.updateAtIndex(id, (current) => ({
+		const result = await this.updateAtIndex(id, (current) => ({
 			...current,
+			...(data.uid !== undefined && { uid: data.uid }),
 			...(data.summary !== undefined && { summary: data.summary }),
-			...(data.startDate !== undefined && {
-				startDate: new Date(data.startDate),
+			...(data.description !== undefined && {
+				description: data.description,
 			}),
-			...(data.endDate !== undefined && { endDate: new Date(data.endDate) }),
+			...(data.dtstart !== undefined && {
+				dtstart: new Date(data.dtstart),
+			}),
+			...(data.dtend !== undefined && { dtend: new Date(data.dtend) }),
+			...(data.timezone !== undefined && { timezone: data.timezone }),
 			...("rrule" in data && { rrule: data.rrule ?? null }),
-			...(data.active !== undefined && { active: data.active }),
-			...("observation" in data && { observation: data.observation ?? null }),
+			...(data.status !== undefined && { status: data.status }),
+			...(data.sequence !== undefined && { sequence: data.sequence }),
+			...(data.sequence === undefined && { sequence: current.sequence + 1 }),
 			...(data.professionalId !== undefined && {
 				professionalId: data.professionalId,
 			}),
+			dtstamp: new Date(),
 			updatedAt: new Date(),
 		}));
+
+		if (result.isErr()) {
+			return err(result.error);
+		}
+
+		return ok(result.value);
 	}
 
 	async hasConflictInAppointments(
 		professionalId: string,
-		startDate: Date,
-		endDate: Date,
+		dtstart: Date,
+		dtend: Date,
 		excludedAppointmentId?: string,
 	) {
 		const hasConflict = this.items.some((appointment) => {
@@ -174,7 +193,7 @@ export class MockAppointmentRepository
 				return false;
 			}
 
-			if (!appointment.active) {
+			if (appointment.status === "CANCELLED") {
 				return false;
 			}
 
@@ -186,7 +205,7 @@ export class MockAppointmentRepository
 				return false;
 			}
 
-			return appointment.startDate < endDate && appointment.endDate > startDate;
+			return appointment.dtstart < dtend && appointment.dtend > dtstart;
 		});
 
 		return ok(hasConflict);
@@ -195,7 +214,9 @@ export class MockAppointmentRepository
 	async delete(id: string) {
 		const result = await this.updateAtIndex(id, (current) => ({
 			...current,
-			active: false,
+			status: "CANCELLED",
+			sequence: current.sequence + 1,
+			dtstamp: new Date(),
 			deletedAt: new Date(),
 			updatedAt: new Date(),
 		}));
