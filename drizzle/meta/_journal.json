@@ -15,6 +15,13 @@
 			"when": 1772654995294,
 			"tag": "0001_strange_soft_delete",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1772700000000,
+			"tag": "0002_dark_rrule_migration",
+			"breakpoints": true
 		}
 	]
 }

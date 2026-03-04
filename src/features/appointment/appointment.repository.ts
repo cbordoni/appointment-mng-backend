@@ -45,13 +45,13 @@ export class AppointmentRepository implements IAppointmentRepository {
 			const baseQuery = db
 				.select({
 					id: appointments.id,
-					title: appointments.title,
+					summary: appointments.summary,
 					startDate: appointments.startDate,
 					endDate: appointments.endDate,
 					clientId: appointments.clientId,
 					professionalId: appointments.professionalId,
 					active: appointments.active,
-					recurrence: appointments.recurrence,
+					rrule: appointments.rrule,
 					deletedAt: appointments.deletedAt,
 					observation: appointments.observation,
 					clientName: clients.name,
@@ -146,10 +146,10 @@ export class AppointmentRepository implements IAppointmentRepository {
 				db
 					.insert(appointments)
 					.values({
-						title: data.title,
+						summary: data.summary,
 						startDate: new Date(data.startDate),
 						endDate: new Date(data.endDate),
-						recurrence: data.recurrence ?? "none",
+						rrule: data.rrule ?? null,
 						active: data.active ?? true,
 						deletedAt: null,
 						observation: data.observation ?? null,
@@ -170,13 +170,13 @@ export class AppointmentRepository implements IAppointmentRepository {
 					.update(appointments)
 					.set({
 						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.title !== undefined && { title: data.title }),
+						...(data.summary !== undefined && { summary: data.summary }),
 						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.startDate !== undefined && { startDate: new Date(data.startDate), }),
 						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.endDate !== undefined && { endDate: new Date(data.endDate), }),
 						// biome-ignore format: to avoid breaking the conditional properties
-						...(data.recurrence !== undefined && { recurrence: data.recurrence }),
+						...("rrule" in data && { rrule: data.rrule ?? null }),
 						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.active !== undefined && { active: data.active }),
 						// biome-ignore format: to avoid breaking the conditional properties

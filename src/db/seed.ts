@@ -70,7 +70,7 @@ const professionalsSeedData: NewProfessional[] = [
 const appointmentsSeedData: NewAppointment[] = [
 	{
 		id: "2b412040-79eb-4826-8e5a-eb7d58fef214",
-		title: "Sessão inicial",
+		summary: "Sessão inicial",
 		startDate: new Date("2026-03-03T14:00:00.000Z"),
 		endDate: new Date("2026-03-03T15:00:00.000Z"),
 		observation: "Primeira conversa para entender objetivos terapêuticos.",
@@ -79,7 +79,7 @@ const appointmentsSeedData: NewAppointment[] = [
 	},
 	{
 		id: "44a4bd5c-68e4-44d4-b458-a75f12a95239",
-		title: "Acompanhamento mensal",
+		summary: "Acompanhamento mensal",
 		startDate: new Date("2026-03-10T13:00:00.000Z"),
 		endDate: new Date("2026-03-10T14:00:00.000Z"),
 		observation: "Revisão de evolução e ajuste de plano terapêutico.",
@@ -88,7 +88,7 @@ const appointmentsSeedData: NewAppointment[] = [
 	},
 	{
 		id: "c7f2665d-a7dd-45f9-9ff3-262d7e6549fd",
-		title: "Sessão de retorno",
+		summary: "Sessão de retorno",
 		startDate: new Date("2026-03-17T16:30:00.000Z"),
 		endDate: new Date("2026-03-17T17:30:00.000Z"),
 		observation: "Retorno focado em estratégias para rotina semanal.",

@@ -2,11 +2,8 @@ import { t } from "elysia";
 
 import type { Appointment } from "@/db/schema";
 
-export const RecurrenceSchema = t.Union([
-	t.Literal("none"),
-	t.Literal("weekly"),
-	t.Literal("monthly"),
-]);
+const RFC_5545_RRULE_PATTERN =
+	"^(FREQ=(SECONDLY|MINUTELY|HOURLY|DAILY|WEEKLY|MONTHLY|YEARLY))(;([A-Z]+)=([^;\\s]+))*$";
 
 export type AppointmentWithClient = Appointment & {
 	clientName: string;
@@ -21,10 +18,10 @@ export const DateRangeQuerySchema = t.Object({
 export type DateRangeQuery = typeof DateRangeQuerySchema.static;
 
 export const CreateAppointmentSchema = t.Object({
-	title: t.String({ minLength: 1 }),
+	summary: t.String({ minLength: 1 }),
 	startDate: t.String({ format: "date-time" }),
 	endDate: t.String({ format: "date-time" }),
-	recurrence: t.Optional(RecurrenceSchema),
+	rrule: t.Optional(t.String({ pattern: RFC_5545_RRULE_PATTERN })),
 	active: t.Optional(t.Boolean()),
 	observation: t.Optional(t.String()),
 	clientId: t.String({ format: "uuid" }),
@@ -32,10 +29,10 @@ export const CreateAppointmentSchema = t.Object({
 });
 
 export const UpdateAppointmentSchema = t.Object({
-	title: t.Optional(t.String({ minLength: 1 })),
+	summary: t.Optional(t.String({ minLength: 1 })),
 	startDate: t.Optional(t.String({ format: "date-time" })),
 	endDate: t.Optional(t.String({ format: "date-time" })),
-	recurrence: t.Optional(RecurrenceSchema),
+	rrule: t.Optional(t.Nullable(t.String({ pattern: RFC_5545_RRULE_PATTERN }))),
 	active: t.Optional(t.Boolean()),
 	observation: t.Optional(t.Nullable(t.String())),
 	professionalId: t.Optional(t.String({ format: "uuid" })),

@@ -37,10 +37,10 @@ Prefixo: `/appointments`
 
 ```json
 {
-  "title": "Consulta",
+  "summary": "Consulta",
   "startDate": "2026-03-02T10:00:00.000Z",
   "endDate": "2026-03-02T11:00:00.000Z",
-  "recurrence": "weekly",
+  "rrule": "FREQ=WEEKLY;BYDAY=MO",
   "active": true,
   "observation": "Levar exames",
   "clientId": "00000000-0000-0000-0000-000000000000",
@@ -48,7 +48,7 @@ Prefixo: `/appointments`
 }
 ```
 
-  - `recurrence`: `none | weekly | monthly`
+  - `rrule` (opcional): string no formato RFC 5545 (`FREQ=...;...`)
 
 - `PATCH /appointments/:id`
   - Params:
@@ -57,10 +57,10 @@ Prefixo: `/appointments`
 
 ```json
 {
-  "title": "Consulta de retorno",
+  "summary": "Consulta de retorno",
   "startDate": "2026-03-09T10:00:00.000Z",
   "endDate": "2026-03-09T11:00:00.000Z",
-  "recurrence": "monthly",
+  "rrule": "FREQ=MONTHLY;BYMONTHDAY=9",
   "active": false,
   "observation": null,
   "professionalId": "00000000-0000-0000-0000-000000000000"

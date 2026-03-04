@@ -31,10 +31,25 @@ export class AppointmentService {
 			: ok(undefined);
 	}
 
-	private validateTitle(title: string): DomainResult<void> {
-		return title.trim().length === 0
-			? err(new ValidationError("Title cannot be empty"))
+	private validateSummary(summary: string): DomainResult<void> {
+		return summary.trim().length === 0
+			? err(new ValidationError("Summary cannot be empty"))
 			: ok(undefined);
+	}
+
+	private validateRRule(rrule?: string | null): DomainResult<void> {
+		if (rrule === undefined || rrule === null) {
+			return ok(undefined);
+		}
+
+		const rruleRegex =
+			/^(FREQ=(SECONDLY|MINUTELY|HOURLY|DAILY|WEEKLY|MONTHLY|YEARLY))(;([A-Z]+)=([^;\s]+))*$/;
+
+		return rruleRegex.test(rrule)
+			? ok(undefined)
+			: err(
+					new ValidationError("Invalid rrule. Expected RFC 5545 RRULE format"),
+				);
 	}
 
 	private async validateProfessionalConflict(
@@ -138,11 +153,13 @@ export class AppointmentService {
 	}
 
 	async createAppointment(data: CreateAppointmentInput) {
-		const { title, startDate, endDate, clientId, professionalId } = data;
+		const { summary, startDate, endDate, clientId, professionalId, rrule } =
+			data;
 
 		logger.debug("Creating appointment", { clientId });
 
-		const validationResult = this.validateTitle(title)
+		const validationResult = this.validateSummary(summary)
+			.andThen(() => this.validateRRule(rrule))
 			// Validate dates only if both are provided
 			.andThen(() => this.validateDates(startDate, endDate));
 
@@ -196,11 +213,19 @@ export class AppointmentService {
 
 		const currentAppointment = currentAppointmentResult.value;
 
-		const titleValidationResult =
-			data.title !== undefined ? this.validateTitle(data.title) : ok(undefined);
+		const summaryValidationResult =
+			data.summary !== undefined
+				? this.validateSummary(data.summary)
+				: ok(undefined);
 
-		if (titleValidationResult.isErr()) {
-			return err(titleValidationResult.error);
+		const rruleValidationResult = this.validateRRule(data.rrule);
+
+		if (summaryValidationResult.isErr()) {
+			return err(summaryValidationResult.error);
+		}
+
+		if (rruleValidationResult.isErr()) {
+			return err(rruleValidationResult.error);
 		}
 
 		const hasStartDate = data.startDate !== undefined;
@@ -211,7 +236,8 @@ export class AppointmentService {
 				? this.validateDates(data.startDate as string, data.endDate as string)
 				: ok(undefined);
 
-		const validationResult = titleValidationResult
+		const validationResult = summaryValidationResult
+			.andThen(() => rruleValidationResult)
 			// Validate dates only if both startDate and endDate are provided
 			.andThen(() => datesValidationResult);
 

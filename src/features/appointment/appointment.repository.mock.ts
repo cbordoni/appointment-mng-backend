@@ -91,10 +91,10 @@ export class MockAppointmentRepository
 	async create(data: CreateAppointmentInput) {
 		const appointment: Appointment = {
 			id: crypto.randomUUID(),
-			title: data.title,
+			summary: data.summary,
 			startDate: new Date(data.startDate),
 			endDate: new Date(data.endDate),
-			recurrence: data.recurrence ?? "none",
+			rrule: data.rrule ?? null,
 			active: data.active ?? true,
 			deletedAt: null,
 			observation: data.observation ?? null,
@@ -148,12 +148,12 @@ export class MockAppointmentRepository
 	async update(id: string, data: UpdateAppointmentInput) {
 		return this.updateAtIndex(id, (current) => ({
 			...current,
-			...(data.title !== undefined && { title: data.title }),
+			...(data.summary !== undefined && { summary: data.summary }),
 			...(data.startDate !== undefined && {
 				startDate: new Date(data.startDate),
 			}),
 			...(data.endDate !== undefined && { endDate: new Date(data.endDate) }),
-			...(data.recurrence !== undefined && { recurrence: data.recurrence }),
+			...("rrule" in data && { rrule: data.rrule ?? null }),
 			...(data.active !== undefined && { active: data.active }),
 			...("observation" in data && { observation: data.observation ?? null }),
 			...(data.professionalId !== undefined && {

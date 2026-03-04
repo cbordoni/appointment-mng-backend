@@ -38,7 +38,7 @@ class MockAppointmentNotificationScheduler implements IScheduler {
 const makeAppointment = (
 	overrides: Partial<CreateAppointmentInput> = {},
 ): CreateAppointmentInput => ({
-	title: "Therapy Session",
+	summary: "Therapy Session",
 	startDate: "2026-03-01T10:00:00.000Z",
 	endDate: "2026-03-01T11:00:00.000Z",
 	clientId: BASE_CLIENT_ID,
@@ -64,7 +64,7 @@ describe("AppointmentService", () => {
 	describe("getAllAppointments", () => {
 		it("should return all appointments when no filter is provided", async () => {
 			await repository.create(makeAppointment());
-			await repository.create(makeAppointment({ title: "Second Session" }));
+			await repository.create(makeAppointment({ summary: "Second Session" }));
 
 			const result = await service.getAllAppointments();
 
@@ -92,16 +92,31 @@ describe("AppointmentService", () => {
 			}
 		});
 
-		it("should fail when title is empty", async () => {
+		it("should fail when summary is empty", async () => {
 			const result = await service.createAppointment(
-				makeAppointment({ title: "   " }),
+				makeAppointment({ summary: "   " }),
 			);
 
 			expect(result.isErr()).toBe(true);
 
 			if (result.isErr()) {
 				expect(result.error).toBeInstanceOf(ValidationError);
-				expect(result.error.message).toBe("Title cannot be empty");
+				expect(result.error.message).toBe("Summary cannot be empty");
+			}
+		});
+
+		it("should fail when rrule is invalid", async () => {
+			const result = await service.createAppointment(
+				makeAppointment({ rrule: "INVALID=RULE" }),
+			);
+
+			expect(result.isErr()).toBe(true);
+
+			if (result.isErr()) {
+				expect(result.error).toBeInstanceOf(ValidationError);
+				expect(result.error.message).toBe(
+					"Invalid rrule. Expected RFC 5545 RRULE format",
+				);
 			}
 		});
 
@@ -132,13 +147,13 @@ describe("AppointmentService", () => {
 
 			if (created.isOk()) {
 				const result = await service.updateAppointment(created.value.id, {
-					title: "Updated Session",
+					summary: "Updated Session",
 				});
 
 				expect(result.isOk()).toBe(true);
 
 				if (result.isOk()) {
-					expect(result.value.title).toBe("Updated Session");
+					expect(result.value.summary).toBe("Updated Session");
 					expect(notificationScheduler.rescheduledAppointmentIds).toEqual([
 						created.value.id,
 					]);

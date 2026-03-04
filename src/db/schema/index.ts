@@ -1,18 +1,4 @@
-import {
-	boolean,
-	pgEnum,
-	pgTable,
-	text,
-	timestamp,
-	uuid,
-} from "drizzle-orm/pg-core";
-
-export const recurrenceEnum = pgEnum("appointment_recurrence", [
-	"none",
-	"daily",
-	"weekly",
-	"monthly",
-]);
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -42,10 +28,10 @@ export type NewProfessional = typeof professionals.$inferInsert;
 
 export const appointments = pgTable("appointments", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	title: text("title").notNull(),
+	summary: text("summary").notNull(),
 	startDate: timestamp("start_date").notNull(),
 	endDate: timestamp("end_date").notNull(),
-	recurrence: recurrenceEnum("recurrence").notNull().default("none"),
+	rrule: text("rrule"),
 	active: boolean("active").notNull().default(true),
 	deletedAt: timestamp("deleted_at"),
 	observation: text("observation"),
