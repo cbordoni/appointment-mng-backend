@@ -25,7 +25,7 @@ describe("ProfessionalService", () => {
 					id: "1",
 					name: "Dr. John Doe",
 					taxId: "12345678901",
-					phone: "11999999999",
+					cellphone: "11999999999",
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
@@ -33,7 +33,7 @@ describe("ProfessionalService", () => {
 					id: "2",
 					name: "Dr. Jane Doe",
 					taxId: "10987654321",
-					phone: "11888888888",
+					cellphone: "11888888888",
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
@@ -62,7 +62,7 @@ describe("ProfessionalService", () => {
 				id: "123",
 				name: "Dr. John Doe",
 				taxId: "12345678901",
-				phone: "11999999999",
+				cellphone: "11999999999",
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
@@ -85,7 +85,7 @@ describe("ProfessionalService", () => {
 			const input: CreateProfessionalInput = {
 				name: "Dr. John Doe",
 				taxId: "12345678901",
-				phone: "11999999999",
+				cellphone: "11999999999",
 			};
 
 			const result = await professionalService.createProfessional(input);
@@ -96,7 +96,7 @@ describe("ProfessionalService", () => {
 				const professional = result.value;
 				expect(professional.name).toBe("Dr. John Doe");
 				expect(professional.taxId).toBe("12345678901");
-				expect(professional.phone).toBe("11999999999");
+				expect(professional.cellphone).toBe("11999999999");
 				expect(professional.id).toBeDefined();
 			}
 		});
@@ -105,7 +105,7 @@ describe("ProfessionalService", () => {
 			const input: CreateProfessionalInput = {
 				name: "   ",
 				taxId: "12345678901",
-				phone: "11999999999",
+				cellphone: "11999999999",
 			};
 
 			const result = await professionalService.createProfessional(input);
@@ -122,7 +122,7 @@ describe("ProfessionalService", () => {
 			const input: CreateProfessionalInput = {
 				name: "Dr. John Doe",
 				taxId: "1234",
-				phone: "11999999999",
+				cellphone: "11999999999",
 			};
 
 			const result = await professionalService.createProfessional(input);
@@ -142,7 +142,7 @@ describe("ProfessionalService", () => {
 				id: "123",
 				name: "Dr. John Doe",
 				taxId: "12345678901",
-				phone: "11999999999",
+				cellphone: "11999999999",
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
@@ -164,9 +164,9 @@ describe("ProfessionalService", () => {
 			}
 		});
 
-		it("should fail when updating with invalid phone", async () => {
+		it("should fail when updating with invalid cellphone", async () => {
 			const input: UpdateProfessionalInput = {
-				phone: "123",
+				cellphone: "123",
 			};
 
 			const result = await professionalService.updateProfessional("123", input);
@@ -175,7 +175,7 @@ describe("ProfessionalService", () => {
 
 			if (result.isErr()) {
 				expect(result.error).toBeInstanceOf(ValidationError);
-				expect(result.error.message).toBe("Invalid phone number");
+				expect(result.error.message).toBe("Invalid cellphone number");
 			}
 		});
 	});

@@ -56,6 +56,7 @@ export class ClientRepository implements IClientRepository {
 					.values({
 						name: data.name,
 						cellphone: data.cellphone,
+						taxId: data.taxId,
 					})
 					.returning(),
 			"Failed to create client",

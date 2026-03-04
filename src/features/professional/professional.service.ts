@@ -25,9 +25,9 @@ export class ProfessionalService {
 			: ok(undefined);
 	}
 
-	private validatePhone(phone: string): Result<void, ValidationError> {
-		return phone.replace(/\D/g, "").length < 10
-			? err(new ValidationError("Invalid phone number"))
+	private validatePhone(cellphone: string): Result<void, ValidationError> {
+		return cellphone.replace(/\D/g, "").length < 10
+			? err(new ValidationError("Invalid cellphone number"))
 			: ok(undefined);
 	}
 
@@ -45,7 +45,9 @@ export class ProfessionalService {
 	): Promise<Result<PaginatedResponse<Professional>, DatabaseError>> {
 		logger.debug("Fetching all professionals", { page, limit });
 
-		return (await this.repository.findAll(page, limit)).map((data) => {
+		const getResult = await this.repository.findAll(page, limit);
+
+		return getResult.map((data) => {
 			logger.info("Professionals fetched successfully", {
 				count: data.items.length,
 				total: data.total,
@@ -78,7 +80,7 @@ export class ProfessionalService {
 
 		const validationResult = this.validateName(data.name)
 			.andThen(() => this.validateTaxId(data.taxId))
-			.andThen(() => this.validatePhone(data.phone));
+			.andThen(() => this.validatePhone(data.cellphone));
 
 		if (validationResult.isErr()) {
 			logger.warn("Professional creation failed: invalid input", {
@@ -87,7 +89,9 @@ export class ProfessionalService {
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.create(data)).map((professional) => {
+		const createResult = await this.repository.create(data);
+
+		return createResult.map((professional) => {
 			logger.info("Professional created successfully", {
 				id: professional.id,
 				name: professional.name,
@@ -112,7 +116,9 @@ export class ProfessionalService {
 			data.taxId !== undefined ? this.validateTaxId(data.taxId) : ok(undefined);
 
 		const phoneValidationResult =
-			data.phone !== undefined ? this.validatePhone(data.phone) : ok(undefined);
+			data.cellphone !== undefined
+				? this.validatePhone(data.cellphone)
+				: ok(undefined);
 
 		const validationResult = nameValidationResult
 			.andThen(() => taxIdValidationResult)
@@ -123,7 +129,9 @@ export class ProfessionalService {
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.update(id, data)).map((professional) => {
+		const updateResult = await this.repository.update(id, data);
+
+		return updateResult.map((professional) => {
 			logger.info("Professional updated successfully", { id });
 			return professional;
 		});
@@ -134,7 +142,9 @@ export class ProfessionalService {
 	): Promise<Result<void, NotFoundError | DatabaseError>> {
 		logger.debug("Deleting professional", { id });
 
-		return (await this.repository.delete(id)).map(() => {
+		const deleteResult = await this.repository.delete(id);
+
+		return deleteResult.map(() => {
 			logger.info("Professional deleted successfully", { id });
 			return undefined;
 		});

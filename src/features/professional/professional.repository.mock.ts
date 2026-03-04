@@ -35,7 +35,7 @@ export class MockProfessionalRepository
 			id: crypto.randomUUID(),
 			name: data.name,
 			taxId: data.taxId,
-			phone: data.phone,
+			cellphone: data.cellphone,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};

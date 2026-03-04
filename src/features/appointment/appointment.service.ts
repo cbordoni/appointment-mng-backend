@@ -4,7 +4,8 @@ import { ValidationError } from "@/common/errors";
 import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
 import type { DomainResult } from "@/common/types/database-result";
-import type { IScheduler } from "../scheduler/scheduler.interface";
+import type { IScheduler } from "@/features/scheduler/scheduler.interface";
+
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
 	CreateAppointmentInput,

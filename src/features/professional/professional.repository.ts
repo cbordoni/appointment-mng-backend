@@ -62,7 +62,7 @@ export class ProfessionalRepository implements IProfessionalRepository {
 					.values({
 						name: data.name,
 						taxId: data.taxId,
-						phone: data.phone,
+						cellphone: data.cellphone,
 					})
 					.returning(),
 			"Failed to create professional",

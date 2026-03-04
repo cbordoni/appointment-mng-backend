@@ -32,7 +32,7 @@ Prefixo: `/professionals`
 {
   "name": "Nome",
   "taxId": "12345678901",
-  "phone": "11999999999"
+  "cellphone": "11999999999"
 }
 ```
 
@@ -45,7 +45,7 @@ Prefixo: `/professionals`
 {
   "name": "Novo nome",
   "taxId": "12345678901",
-  "phone": "11999999999"
+  "cellphone": "11999999999"
 }
 ```
 

@@ -34,7 +34,9 @@ export class ClientService {
 	): Promise<Result<PaginatedResponse<Client>, DatabaseError>> {
 		logger.debug("Fetching all clients", { page, limit });
 
-		return (await this.repository.findAll(page, limit)).map((data) => {
+		const getResult = await this.repository.findAll(page, limit);
+
+		return getResult.map((data) => {
 			logger.info("Clients fetched successfully", {
 				count: data.items.length,
 				total: data.total,
@@ -73,10 +75,13 @@ export class ClientService {
 			logger.warn("Client creation failed: invalid input", {
 				reason: validationResult.error.message,
 			});
+
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.create(data)).map((client) => {
+		const createResult = await this.repository.create(data);
+
+		return createResult.map((client) => {
 			logger.info("Client created successfully", {
 				id: client.id,
 				name: client.name,
@@ -109,7 +114,9 @@ export class ClientService {
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.update(id, data)).map((client) => {
+		const updateResult = await this.repository.update(id, data);
+
+		return updateResult.map((client) => {
 			logger.info("Client updated successfully", { id });
 			return client;
 		});
@@ -120,7 +127,9 @@ export class ClientService {
 	): Promise<Result<void, NotFoundError | DatabaseError>> {
 		logger.debug("Deleting client", { id });
 
-		return (await this.repository.delete(id)).map(() => {
+		const deleteResult = await this.repository.delete(id);
+
+		return deleteResult.map(() => {
 			logger.info("Client deleted successfully", { id });
 			return undefined;
 		});

@@ -17,8 +17,8 @@ export const recurrenceEnum = pgEnum("appointment_recurrence", [
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
-	taxId: text("tax_id").notNull().unique(),
-	phone: text("phone").notNull(),
+	taxId: text("tax_id").unique(),
+	cellphone: text("cellphone").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -30,7 +30,7 @@ export const professionals = pgTable("professionals", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
 	taxId: text("tax_id").notNull().unique(),
-	phone: text("phone").notNull(),
+	cellphone: text("cellphone").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

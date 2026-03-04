@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import { ok } from "neverthrow";
 
 import { ValidationError } from "@/common/errors";
-import type { IScheduler } from "../scheduler/scheduler.interface";
+import type { IScheduler } from "@/features/scheduler/scheduler.interface";
+
 import { MockAppointmentRepository } from "./appointment.repository.mock";
 import { AppointmentService } from "./appointment.service";
 import type { CreateAppointmentInput } from "./appointment.types";

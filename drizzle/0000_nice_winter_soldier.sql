@@ -17,8 +17,8 @@ CREATE TABLE "appointments" (
 CREATE TABLE "clients" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
-	"tax_id" text NOT NULL,
-	"phone" text NOT NULL,
+	"tax_id" text,
+	"cellphone" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "clients_tax_id_unique" UNIQUE("tax_id")
@@ -28,7 +28,7 @@ CREATE TABLE "professionals" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"tax_id" text NOT NULL,
-	"phone" text NOT NULL,
+	"cellphone" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "professionals_tax_id_unique" UNIQUE("tax_id")
