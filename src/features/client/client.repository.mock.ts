@@ -1,6 +1,6 @@
-import { ok, type Result } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 
-import type { NotFoundError } from "@/common/errors";
+import { type DatabaseError, NotFoundError } from "@/common/errors";
 import type { Client } from "@/db/schema";
 import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
 
@@ -16,11 +16,30 @@ export class MockClientRepository
 	}
 
 	async findAll(page: number, limit: number) {
-		return super.findAll(page, limit);
+		const activeClients = this.items.filter((client) => !client.deletedAt);
+		const offset = (page - 1) * limit;
+		const data = activeClients.slice(offset, offset + limit);
+
+		return ok({
+			items: data,
+			total: activeClients.length,
+		});
+	}
+
+	async findById(id: string) {
+		const client = this.items.find((item) => item.id === id && !item.deletedAt);
+
+		if (!client) {
+			return err(new NotFoundError(this.entityName, id));
+		}
+
+		return ok(client);
 	}
 
 	async exists(id: string) {
-		const clientExists = this.items.some((client) => client.id === id);
+		const clientExists = this.items.some(
+			(client) => client.id === id && !client.deletedAt,
+		);
 
 		return ok(clientExists);
 	}
@@ -29,7 +48,9 @@ export class MockClientRepository
 		const client: Client = {
 			id: crypto.randomUUID(),
 			name: data.name,
+			taxId: data.taxId ?? null,
 			cellphone: data.cellphone,
+			deletedAt: null,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
@@ -42,14 +63,15 @@ export class MockClientRepository
 	private async updateClientAtIndex(
 		id: string,
 		updater: (client: Client) => Client,
-	) {
-		const indexResult = await this.findIndexById(id);
+	): Promise<Result<Client, NotFoundError | DatabaseError>> {
+		const index = this.items.findIndex(
+			(client) => client.id === id && !client.deletedAt,
+		);
 
-		if (indexResult.isErr()) {
-			return indexResult as Result<never, NotFoundError>;
+		if (index === -1) {
+			return err(new NotFoundError(this.entityName, id));
 		}
 
-		const index = indexResult.value;
 		const currentClient = this.items[index];
 		const updated = updater(currentClient);
 
@@ -64,6 +86,20 @@ export class MockClientRepository
 			...data,
 			updatedAt: new Date(),
 		}));
+	}
+
+	async delete(id: string) {
+		const result = await this.updateClientAtIndex(id, (currentClient) => ({
+			...currentClient,
+			deletedAt: new Date(),
+			updatedAt: new Date(),
+		}));
+
+		if (result.isErr()) {
+			return err(result.error);
+		}
+
+		return ok(undefined);
 	}
 
 	// Alias helper methods for testing

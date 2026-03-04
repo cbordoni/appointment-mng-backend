@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
@@ -16,10 +16,16 @@ export class ProfessionalRepository implements IProfessionalRepository {
 	async findAll(page: number, limit: number) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
+			const notDeleted = isNull(professionals.deletedAt);
 
 			const [items, total] = await Promise.all([
-				db.select().from(professionals).limit(limit).offset(offset),
-				getTableCount(professionals),
+				db
+					.select()
+					.from(professionals)
+					.where(notDeleted)
+					.limit(limit)
+					.offset(offset),
+				getTableCount(professionals, notDeleted),
 			]);
 
 			return { items, total };
@@ -28,7 +34,13 @@ export class ProfessionalRepository implements IProfessionalRepository {
 
 	async findById(id: string) {
 		const result = await wrapDatabaseOperation(
-			() => db.select().from(professionals).where(eq(professionals.id, id)),
+			() =>
+				db
+					.select()
+					.from(professionals)
+					.where(
+						and(eq(professionals.id, id), isNull(professionals.deletedAt)),
+					),
 			"Failed to fetch professional",
 		);
 
@@ -47,7 +59,9 @@ export class ProfessionalRepository implements IProfessionalRepository {
 				db
 					.select({ id: professionals.id })
 					.from(professionals)
-					.where(eq(professionals.id, id)),
+					.where(
+						and(eq(professionals.id, id), isNull(professionals.deletedAt)),
+					),
 			"Failed to check professional existence",
 		);
 
@@ -63,6 +77,7 @@ export class ProfessionalRepository implements IProfessionalRepository {
 						name: data.name,
 						taxId: data.taxId,
 						cellphone: data.cellphone,
+						deletedAt: null,
 					})
 					.returning(),
 			"Failed to create professional",
@@ -80,7 +95,7 @@ export class ProfessionalRepository implements IProfessionalRepository {
 						...data,
 						updatedAt: new Date(),
 					})
-					.where(eq(professionals.id, id))
+					.where(and(eq(professionals.id, id), isNull(professionals.deletedAt)))
 					.returning(),
 			"Failed to update professional",
 		);
@@ -97,7 +112,14 @@ export class ProfessionalRepository implements IProfessionalRepository {
 	async delete(id: string) {
 		const result = await wrapDatabaseOperation(
 			() =>
-				db.delete(professionals).where(eq(professionals.id, id)).returning(),
+				db
+					.update(professionals)
+					.set({
+						deletedAt: new Date(),
+						updatedAt: new Date(),
+					})
+					.where(and(eq(professionals.id, id), isNull(professionals.deletedAt)))
+					.returning(),
 			"Failed to delete professional",
 		);
 

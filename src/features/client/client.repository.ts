@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
@@ -13,10 +13,11 @@ export class ClientRepository implements IClientRepository {
 	async findAll(page: number, limit: number) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
+			const notDeleted = isNull(clients.deletedAt);
 
 			const [items, total] = await Promise.all([
-				db.select().from(clients).limit(limit).offset(offset),
-				getTableCount(clients),
+				db.select().from(clients).where(notDeleted).limit(limit).offset(offset),
+				getTableCount(clients, notDeleted),
 			]);
 
 			return { items, total };
@@ -25,7 +26,11 @@ export class ClientRepository implements IClientRepository {
 
 	async findById(id: string) {
 		const result = await wrapDatabaseOperation(
-			() => db.select().from(clients).where(eq(clients.id, id)),
+			() =>
+				db
+					.select()
+					.from(clients)
+					.where(and(eq(clients.id, id), isNull(clients.deletedAt))),
 			"Failed to fetch client",
 		);
 
@@ -41,7 +46,10 @@ export class ClientRepository implements IClientRepository {
 	async exists(id: string) {
 		const result = await wrapDatabaseOperation(
 			() =>
-				db.select({ id: clients.id }).from(clients).where(eq(clients.id, id)),
+				db
+					.select({ id: clients.id })
+					.from(clients)
+					.where(and(eq(clients.id, id), isNull(clients.deletedAt))),
 			"Failed to check client existence",
 		);
 
@@ -57,6 +65,7 @@ export class ClientRepository implements IClientRepository {
 						name: data.name,
 						cellphone: data.cellphone,
 						taxId: data.taxId,
+						deletedAt: null,
 					})
 					.returning(),
 			"Failed to create client",
@@ -74,7 +83,7 @@ export class ClientRepository implements IClientRepository {
 						...data,
 						updatedAt: new Date(),
 					})
-					.where(eq(clients.id, id))
+					.where(and(eq(clients.id, id), isNull(clients.deletedAt)))
 					.returning(),
 			"Failed to update client",
 		);
@@ -90,7 +99,15 @@ export class ClientRepository implements IClientRepository {
 
 	async delete(id: string) {
 		const result = await wrapDatabaseOperation(
-			() => db.delete(clients).where(eq(clients.id, id)).returning(),
+			() =>
+				db
+					.update(clients)
+					.set({
+						deletedAt: new Date(),
+						updatedAt: new Date(),
+					})
+					.where(and(eq(clients.id, id), isNull(clients.deletedAt)))
+					.returning(),
 			"Failed to delete client",
 		);
 

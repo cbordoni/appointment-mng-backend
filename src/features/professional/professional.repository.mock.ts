@@ -1,6 +1,6 @@
-import { ok, type Result } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 
-import type { NotFoundError } from "@/common/errors";
+import { type DatabaseError, NotFoundError } from "@/common/errors";
 import type { Professional } from "@/db/schema";
 import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
 
@@ -19,12 +19,33 @@ export class MockProfessionalRepository
 	}
 
 	async findAll(page: number, limit: number) {
-		return super.findAll(page, limit);
+		const activeProfessionals = this.items.filter(
+			(professional) => !professional.deletedAt,
+		);
+		const offset = (page - 1) * limit;
+		const data = activeProfessionals.slice(offset, offset + limit);
+
+		return ok({
+			items: data,
+			total: activeProfessionals.length,
+		});
+	}
+
+	async findById(id: string) {
+		const professional = this.items.find(
+			(item) => item.id === id && !item.deletedAt,
+		);
+
+		if (!professional) {
+			return err(new NotFoundError(this.entityName, id));
+		}
+
+		return ok(professional);
 	}
 
 	async exists(id: string) {
 		const professionalExists = this.items.some(
-			(professional) => professional.id === id,
+			(professional) => professional.id === id && !professional.deletedAt,
 		);
 
 		return ok(professionalExists);
@@ -36,6 +57,7 @@ export class MockProfessionalRepository
 			name: data.name,
 			taxId: data.taxId,
 			cellphone: data.cellphone,
+			deletedAt: null,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
@@ -48,14 +70,15 @@ export class MockProfessionalRepository
 	private async updateProfessionalAtIndex(
 		id: string,
 		updater: (professional: Professional) => Professional,
-	) {
-		const indexResult = await this.findIndexById(id);
+	): Promise<Result<Professional, NotFoundError | DatabaseError>> {
+		const index = this.items.findIndex(
+			(professional) => professional.id === id && !professional.deletedAt,
+		);
 
-		if (indexResult.isErr()) {
-			return indexResult as Result<never, NotFoundError>;
+		if (index === -1) {
+			return err(new NotFoundError(this.entityName, id));
 		}
 
-		const index = indexResult.value;
 		const currentProfessional = this.items[index];
 		const updated = updater(currentProfessional);
 
@@ -70,6 +93,23 @@ export class MockProfessionalRepository
 			...data,
 			updatedAt: new Date(),
 		}));
+	}
+
+	async delete(id: string) {
+		const result = await this.updateProfessionalAtIndex(
+			id,
+			(currentProfessional) => ({
+				...currentProfessional,
+				deletedAt: new Date(),
+				updatedAt: new Date(),
+			}),
+		);
+
+		if (result.isErr()) {
+			return err(result.error);
+		}
+
+		return ok(undefined);
 	}
 
 	setProfessionals(professionals: Professional[]) {

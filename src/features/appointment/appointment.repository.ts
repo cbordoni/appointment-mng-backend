@@ -36,6 +36,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 		return wrapDatabaseOperation(() => {
 			const conditions = [
 				isNull(appointments.deletedAt),
+				isNull(clients.deletedAt),
+				isNull(professionals.deletedAt),
 				from ? gte(appointments.startDate, from) : undefined,
 				to ? lte(appointments.startDate, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;

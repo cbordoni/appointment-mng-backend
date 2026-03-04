@@ -21,14 +21,18 @@ describe("ClientService", () => {
 				{
 					id: "1",
 					name: "John Doe",
+					taxId: null,
 					cellphone: "1234567890",
+					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
 				{
 					id: "2",
 					name: "Jane Doe",
+					taxId: null,
 					cellphone: "0987654321",
+					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
@@ -54,7 +58,9 @@ describe("ClientService", () => {
 			const mockClients = Array.from({ length: 25 }, (_, i) => ({
 				id: `${i + 1}`,
 				name: `Client ${i + 1}`,
+				taxId: null,
 				cellphone: "1234567890",
+				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			}));
@@ -93,7 +99,9 @@ describe("ClientService", () => {
 			const mockClient = {
 				id: "123",
 				name: "John Doe",
+				taxId: null,
 				cellphone: "1234567890",
+				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
@@ -191,7 +199,9 @@ describe("ClientService", () => {
 			const mockClient = {
 				id: "123",
 				name: "John Doe",
+				taxId: null,
 				cellphone: "11987654321",
+				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
@@ -277,7 +287,9 @@ describe("ClientService", () => {
 			const mockClient = {
 				id: "123",
 				name: "John Doe",
+				taxId: null,
 				cellphone: "11987654321",
+				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};

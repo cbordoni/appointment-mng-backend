@@ -26,6 +26,7 @@ describe("ProfessionalService", () => {
 					name: "Dr. John Doe",
 					taxId: "12345678901",
 					cellphone: "11999999999",
+					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
@@ -34,6 +35,7 @@ describe("ProfessionalService", () => {
 					name: "Dr. Jane Doe",
 					taxId: "10987654321",
 					cellphone: "11888888888",
+					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
@@ -63,6 +65,7 @@ describe("ProfessionalService", () => {
 				name: "Dr. John Doe",
 				taxId: "12345678901",
 				cellphone: "11999999999",
+				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
@@ -143,6 +146,7 @@ describe("ProfessionalService", () => {
 				name: "Dr. John Doe",
 				taxId: "12345678901",
 				cellphone: "11999999999",
+				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
