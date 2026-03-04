@@ -4,7 +4,12 @@ import { err, ok } from "neverthrow";
 import { NotFoundError } from "@/common/errors";
 import { getTableCount, wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
-import { appointmentEvents, appointments, clients } from "@/db/schema";
+import {
+	appointmentEvents,
+	appointments,
+	clients,
+	professionals,
+} from "@/db/schema";
 
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
@@ -64,16 +69,23 @@ export class AppointmentRepository implements IAppointmentRepository {
 					title: appointments.title,
 					startDate: appointments.startDate,
 					endDate: appointments.endDate,
+					clientId: appointments.clientId,
+					professionalId: appointments.professionalId,
 					active: appointments.active,
 					recurrence: appointments.recurrence,
 					deletedAt: appointments.deletedAt,
 					observation: appointments.observation,
 					clientName: clients.name,
+					professionalName: professionals.name,
 					createdAt: appointments.createdAt,
 					updatedAt: appointments.updatedAt,
 				})
 				.from(appointments)
-				.innerJoin(clients, eq(appointments.clientId, clients.id));
+				.innerJoin(clients, eq(appointments.clientId, clients.id))
+				.innerJoin(
+					professionals,
+					eq(appointments.professionalId, professionals.id),
+				);
 
 			return conditions.length
 				? baseQuery.where(and(...conditions))
@@ -99,9 +111,14 @@ export class AppointmentRepository implements IAppointmentRepository {
 					observation: appointments.observation,
 					recurrence: appointments.recurrence,
 					clientName: clients.name,
+					professionalName: professionals.name,
 				})
 				.from(appointments)
 				.innerJoin(clients, eq(appointments.clientId, clients.id))
+				.innerJoin(
+					professionals,
+					eq(appointments.professionalId, professionals.id),
+				)
 				.where(and(...conditions));
 
 			return nonRecurringAppointments.map((appointment) => ({
@@ -112,6 +129,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 				observation: appointment.observation,
 				recurrence: appointment.recurrence,
 				clientName: appointment.clientName,
+				professionalName: appointment.professionalName,
 			}));
 		}, "Failed to fetch non-recurring appointments");
 	}
@@ -171,6 +189,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 						deletedAt: null,
 						observation: data.observation ?? null,
 						clientId: data.clientId,
+						professionalId: data.professionalId,
 					})
 					.returning(),
 			"Failed to create appointment",
@@ -197,6 +216,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 						...(data.active !== undefined && { active: data.active }),
 						// biome-ignore format: to avoid breaking the conditional properties
 						...(data.observation !== undefined && { observation: data.observation }),
+						// biome-ignore format: to avoid breaking the conditional properties
+						...(data.professionalId !== undefined && { professionalId: data.professionalId }),
 						updatedAt: new Date(),
 					})
 					.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
@@ -256,9 +277,14 @@ export class AppointmentRepository implements IAppointmentRepository {
 					recurrence: appointments.recurrence,
 					observation: appointments.observation,
 					clientName: clients.name,
+					professionalName: professionals.name,
 				})
 				.from(appointments)
 				.innerJoin(clients, eq(appointments.clientId, clients.id))
+				.innerJoin(
+					professionals,
+					eq(appointments.professionalId, professionals.id),
+				)
 				.where(
 					and(
 						ne(appointments.recurrence, "none"),
@@ -288,6 +314,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 							observation: appointment.observation,
 							recurrence: appointment.recurrence,
 							clientName: appointment.clientName,
+							professionalName: appointment.professionalName,
 						});
 					}
 
@@ -314,7 +341,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 	}
 
 	async hasConflictInAppointments(
-		clientId: string,
+		professionalId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -325,7 +352,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 				: undefined;
 
 			const conditions = [
-				eq(appointments.clientId, clientId),
+				eq(appointments.professionalId, professionalId),
 				eq(appointments.active, true),
 				isNull(appointments.deletedAt),
 				lt(appointments.startDate, endDate),
@@ -344,14 +371,14 @@ export class AppointmentRepository implements IAppointmentRepository {
 	}
 
 	async hasConflictInProjection(
-		clientId: string,
+		professionalId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
 	) {
 		return wrapDatabaseOperation(async () => {
 			const recurringConditions = [
-				eq(appointments.clientId, clientId),
+				eq(appointments.professionalId, professionalId),
 				ne(appointments.recurrence, "none"),
 				eq(appointments.active, true),
 				isNull(appointments.deletedAt),

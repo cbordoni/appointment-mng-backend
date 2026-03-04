@@ -37,7 +37,7 @@ export class AppointmentService {
 	}
 
 	private async validateProfessionalConflict(
-		clientId: string,
+		professionalId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -45,13 +45,13 @@ export class AppointmentService {
 		const [appointmentsConflictResult, projectionConflictResult] =
 			await Promise.all([
 				this.repository.hasConflictInAppointments(
-					clientId,
+					professionalId,
 					startDate,
 					endDate,
 					excludedAppointmentId,
 				),
 				this.repository.hasConflictInProjection(
-					clientId,
+					professionalId,
 					startDate,
 					endDate,
 					excludedAppointmentId,
@@ -121,7 +121,7 @@ export class AppointmentService {
 	}
 
 	async createAppointment(data: CreateAppointmentInput) {
-		const { title, startDate, endDate, clientId } = data;
+		const { title, startDate, endDate, clientId, professionalId } = data;
 
 		logger.debug("Creating appointment", { clientId });
 
@@ -134,7 +134,7 @@ export class AppointmentService {
 		}
 
 		const conflictValidationResult = await this.validateProfessionalConflict(
-			clientId,
+			professionalId,
 			new Date(startDate),
 			new Date(endDate),
 		);
@@ -206,7 +206,7 @@ export class AppointmentService {
 		const endDate = new Date(data.endDate ?? currentAppointment.endDate);
 
 		const conflictValidationResult = await this.validateProfessionalConflict(
-			currentAppointment.clientId,
+			data.professionalId ?? currentAppointment.professionalId,
 			startDate,
 			endDate,
 			id,

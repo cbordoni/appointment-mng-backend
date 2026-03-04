@@ -25,15 +25,10 @@ export class MockClientRepository
 		return ok(clientExists);
 	}
 
-	async findByEmail(email: string) {
-		return this.findByPredicate((client) => client.email === email, email);
-	}
-
 	async create(data: CreateClientInput) {
 		const client: Client = {
 			id: crypto.randomUUID(),
 			name: data.name,
-			email: data.email,
 			cellphone: data.cellphone,
 			createdAt: new Date(),
 			updatedAt: new Date(),

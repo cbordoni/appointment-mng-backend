@@ -10,6 +10,7 @@ import { AppointmentEventService } from "./event/event.service";
 import { AppointmentProjectionService } from "./projection/projection.service";
 
 const BASE_CLIENT_ID = "00000000-0000-0000-0000-000000000001";
+const BASE_PROFESSIONAL_ID = "00000000-0000-0000-0000-000000000010";
 
 class MockAppointmentNotificationScheduler implements IScheduler {
 	public scheduledAppointmentIds: string[] = [];
@@ -42,6 +43,7 @@ const makeAppointment = (
 	startDate: "2026-03-01T10:00:00.000Z",
 	endDate: "2026-03-01T11:00:00.000Z",
 	clientId: BASE_CLIENT_ID,
+	professionalId: BASE_PROFESSIONAL_ID,
 	...overrides,
 });
 
@@ -59,6 +61,9 @@ describe("AppointmentService", () => {
 		projectionService = new AppointmentProjectionService(repository);
 		eventService = new AppointmentEventService(repository);
 		repository.setClientsMap(new Map([[BASE_CLIENT_ID, "John Doe"]]));
+		repository.setProfessionalsMap(
+			new Map([[BASE_PROFESSIONAL_ID, "Dr. Alice Smith"]]),
+		);
 	});
 
 	describe("getAllAppointments", () => {
@@ -73,6 +78,7 @@ describe("AppointmentService", () => {
 			if (result.isOk()) {
 				expect(result.value).toHaveLength(2);
 				expect(result.value[0].clientName).toBe("John Doe");
+				expect(result.value[0].professionalName).toBe("Dr. Alice Smith");
 			}
 		});
 

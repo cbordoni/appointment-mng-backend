@@ -48,21 +48,6 @@ export class ClientRepository implements IClientRepository {
 		return result.map(([client]) => !!client);
 	}
 
-	async findByEmail(email: string) {
-		const result = await wrapDatabaseOperation(
-			() => db.select().from(clients).where(eq(clients.email, email)),
-			"Failed to fetch client by email",
-		);
-
-		return result.andThen(([client]) => {
-			if (!client) {
-				return err(new NotFoundError("Client", email));
-			}
-
-			return ok(client);
-		});
-	}
-
 	async create(data: CreateClientInput) {
 		const result = await wrapDatabaseOperation(
 			() =>
@@ -70,7 +55,6 @@ export class ClientRepository implements IClientRepository {
 					.insert(clients)
 					.values({
 						name: data.name,
-						email: data.email,
 						cellphone: data.cellphone,
 					})
 					.returning(),
