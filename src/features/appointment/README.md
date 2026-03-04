@@ -57,7 +57,8 @@ Prefixo: `/appointments`
   "recurrence": "weekly",
   "active": true,
   "observation": "Levar exames",
-  "clientId": "00000000-0000-0000-0000-000000000000"
+  "clientId": "00000000-0000-0000-0000-000000000000",
+  "professionalId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -75,7 +76,8 @@ Prefixo: `/appointments`
   "endDate": "2026-03-09T11:00:00.000Z",
   "recurrence": "monthly",
   "active": false,
-  "observation": null
+  "observation": null,
+  "professionalId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 

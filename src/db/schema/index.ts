@@ -22,7 +22,6 @@ export const appointmentEventStatusEnum = pgEnum("appointment_event_status", [
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
-	email: text("email").notNull().unique(),
 	cellphone: text("cellphone").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -30,6 +29,18 @@ export const clients = pgTable("clients", {
 
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
+
+export const professionals = pgTable("professionals", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(),
+	taxId: text("tax_id").notNull().unique(),
+	phone: text("phone").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Professional = typeof professionals.$inferSelect;
+export type NewProfessional = typeof professionals.$inferInsert;
 
 export const appointments = pgTable("appointments", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -43,6 +54,9 @@ export const appointments = pgTable("appointments", {
 	clientId: uuid("client_id")
 		.notNull()
 		.references(() => clients.id, { onDelete: "cascade" }),
+	professionalId: uuid("professional_id")
+		.notNull()
+		.references(() => professionals.id, { onDelete: "cascade" }),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

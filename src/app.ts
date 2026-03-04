@@ -9,6 +9,7 @@ import { requestLoggerPlugin } from "@/common/http/request-logger.plugin";
 import { appointmentRoutes } from "@/features/appointment/appointment.routes";
 import { clientRoutes } from "@/features/client/client.routes";
 import { healthRoutes } from "@/features/health/health.routes";
+import { professionalRoutes } from "@/features/professional/professional.routes";
 
 const version = Bun.env.npm_package_version ?? "1.0.0";
 
@@ -30,6 +31,10 @@ export const app = new Elysia()
 				tags: [
 					{ name: "Clients", description: "Client management endpoints" },
 					{
+						name: "Professionals",
+						description: "Professional management endpoints",
+					},
+					{
 						name: "Appointments",
 						description: "Appointment management endpoints",
 					},
@@ -45,4 +50,5 @@ export const app = new Elysia()
 	})
 	.use(healthRoutes)
 	.use(clientRoutes)
+	.use(professionalRoutes)
 	.use(appointmentRoutes);

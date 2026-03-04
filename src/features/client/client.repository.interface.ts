@@ -7,6 +7,4 @@ import type { CreateClientInput, UpdateClientInput } from "./client.types";
 export interface IClientRepository
 	extends IRepository<Client, CreateClientInput, UpdateClientInput> {
 	exists(id: string): AsyncDomainResult<boolean>;
-
-	findByEmail(email: string): AsyncDomainResult<Client>;
 }

@@ -31,7 +31,6 @@ Prefixo: `/clients`
 ```json
 {
   "name": "Nome",
-  "email": "client@email.com",
   "cellphone": "11999999999",
 }
 ```
@@ -44,7 +43,6 @@ Prefixo: `/clients`
 ```json
 {
   "name": "Novo nome",
-  "email": "novo@email.com",
   "cellphone": "11999999999",
 }
 ```

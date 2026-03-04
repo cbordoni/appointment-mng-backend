@@ -18,6 +18,7 @@ export class MockAppointmentRepository
 	implements IAppointmentRepository
 {
 	private clientsMap = new Map<string, string>();
+	private professionalsMap = new Map<string, string>();
 	private events: AppointmentEvent[] = [];
 
 	private addRecurrenceDate(date: Date, recurrence: "weekly" | "monthly") {
@@ -39,6 +40,10 @@ export class MockAppointmentRepository
 
 	setClientsMap(map: Map<string, string>) {
 		this.clientsMap = map;
+	}
+
+	setProfessionalsMap(map: Map<string, string>) {
+		this.professionalsMap = map;
 	}
 
 	async findAll(page: number, limit: number) {
@@ -63,9 +68,11 @@ export class MockAppointmentRepository
 			return true;
 		});
 
-		const result = filtered.map(({ clientId, ...rest }) => ({
-			...rest,
-			clientName: this.clientsMap.get(clientId) ?? "Unknown",
+		const result = filtered.map((appointment) => ({
+			...appointment,
+			clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
+			professionalName:
+				this.professionalsMap.get(appointment.professionalId) ?? "Unknown",
 		}));
 
 		return ok(result);
@@ -96,6 +103,8 @@ export class MockAppointmentRepository
 				observation: appointment.observation,
 				recurrence: appointment.recurrence,
 				clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
+				professionalName:
+					this.professionalsMap.get(appointment.professionalId) ?? "Unknown",
 			})),
 		);
 	}
@@ -121,6 +130,7 @@ export class MockAppointmentRepository
 			deletedAt: null,
 			observation: data.observation ?? null,
 			clientId: data.clientId,
+			professionalId: data.professionalId,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
@@ -177,6 +187,9 @@ export class MockAppointmentRepository
 			...(data.recurrence !== undefined && { recurrence: data.recurrence }),
 			...(data.active !== undefined && { active: data.active }),
 			...("observation" in data && { observation: data.observation ?? null }),
+			...(data.professionalId !== undefined && {
+				professionalId: data.professionalId,
+			}),
 			updatedAt: new Date(),
 		}));
 	}
@@ -213,6 +226,9 @@ export class MockAppointmentRepository
 						observation: appointment.observation,
 						recurrence: appointment.recurrence,
 						clientName: this.clientsMap.get(appointment.clientId) ?? "Unknown",
+						professionalName:
+							this.professionalsMap.get(appointment.professionalId) ??
+							"Unknown",
 					});
 				}
 
@@ -233,7 +249,7 @@ export class MockAppointmentRepository
 	}
 
 	async hasConflictInAppointments(
-		clientId: string,
+		professionalId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -247,7 +263,7 @@ export class MockAppointmentRepository
 				return false;
 			}
 
-			if (appointment.clientId !== clientId) {
+			if (appointment.professionalId !== professionalId) {
 				return false;
 			}
 
@@ -262,7 +278,7 @@ export class MockAppointmentRepository
 	}
 
 	async hasConflictInProjection(
-		clientId: string,
+		professionalId: string,
 		startDate: Date,
 		endDate: Date,
 		excludedAppointmentId?: string,
@@ -272,7 +288,7 @@ export class MockAppointmentRepository
 				continue;
 			}
 
-			if (appointment.clientId !== clientId) {
+			if (appointment.professionalId !== professionalId) {
 				continue;
 			}
 

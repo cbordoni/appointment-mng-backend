@@ -63,7 +63,7 @@ export class ClientService {
 	async createClient(
 		data: CreateClientInput,
 	): Promise<Result<Client, ValidationError | DatabaseError>> {
-		logger.debug("Creating client", { email: data.email });
+		logger.debug("Creating client", { name: data.name });
 
 		const validationResult = this.validateName(data.name)
 			//
@@ -79,7 +79,7 @@ export class ClientService {
 		return (await this.repository.create(data)).map((client) => {
 			logger.info("Client created successfully", {
 				id: client.id,
-				email: client.email,
+				name: client.name,
 			});
 
 			return client;

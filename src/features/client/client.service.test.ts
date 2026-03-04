@@ -21,7 +21,6 @@ describe("ClientService", () => {
 				{
 					id: "1",
 					name: "John Doe",
-					email: "john@example.com",
 					cellphone: "1234567890",
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -29,7 +28,6 @@ describe("ClientService", () => {
 				{
 					id: "2",
 					name: "Jane Doe",
-					email: "jane@example.com",
 					cellphone: "0987654321",
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -56,7 +54,6 @@ describe("ClientService", () => {
 			const mockClients = Array.from({ length: 25 }, (_, i) => ({
 				id: `${i + 1}`,
 				name: `Client ${i + 1}`,
-				email: `client${i + 1}@example.com`,
 				cellphone: "1234567890",
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -96,7 +93,6 @@ describe("ClientService", () => {
 			const mockClient = {
 				id: "123",
 				name: "John Doe",
-				email: "john@example.com",
 				cellphone: "1234567890",
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -111,7 +107,6 @@ describe("ClientService", () => {
 			if (result.isOk()) {
 				expect(result.value.id).toBe("123");
 				expect(result.value.name).toBe("John Doe");
-				expect(result.value.email).toBe("john@example.com");
 			}
 		});
 
@@ -132,7 +127,6 @@ describe("ClientService", () => {
 		it("should create client successfully with valid data", async () => {
 			const input: CreateClientInput = {
 				name: "John Doe",
-				email: "john@example.com",
 				cellphone: "11987654321",
 			};
 
@@ -143,7 +137,6 @@ describe("ClientService", () => {
 			if (result.isOk()) {
 				const client = result.value;
 				expect(client.name).toBe("John Doe");
-				expect(client.email).toBe("john@example.com");
 				expect(client.cellphone).toBe("11987654321");
 				expect(client.id).toBeDefined();
 			}
@@ -152,7 +145,6 @@ describe("ClientService", () => {
 		it("should fail when name is empty", async () => {
 			const input: CreateClientInput = {
 				name: "   ",
-				email: "john@example.com",
 				cellphone: "11987654321",
 			};
 
@@ -169,7 +161,6 @@ describe("ClientService", () => {
 		it("should fail when cellphone is invalid", async () => {
 			const input: CreateClientInput = {
 				name: "John Doe",
-				email: "john@example.com",
 				cellphone: "123", // Too short
 			};
 
@@ -186,7 +177,6 @@ describe("ClientService", () => {
 		it("should accept cellphone with formatting", async () => {
 			const input: CreateClientInput = {
 				name: "John Doe",
-				email: "john@example.com",
 				cellphone: "(11) 98765-4321",
 			};
 
@@ -201,7 +191,6 @@ describe("ClientService", () => {
 			const mockClient = {
 				id: "123",
 				name: "John Doe",
-				email: "john@example.com",
 				cellphone: "11987654321",
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -213,7 +202,6 @@ describe("ClientService", () => {
 		it("should update client successfully", async () => {
 			const input: UpdateClientInput = {
 				name: "Jane Doe",
-				email: "jane@example.com",
 			};
 
 			const result = await clientService.updateClient("123", input);
@@ -222,7 +210,6 @@ describe("ClientService", () => {
 
 			if (result.isOk()) {
 				expect(result.value.name).toBe("Jane Doe");
-				expect(result.value.email).toBe("jane@example.com");
 			}
 		});
 
@@ -281,7 +268,6 @@ describe("ClientService", () => {
 
 			if (result.isOk()) {
 				expect(result.value.name).toBe("Jane Doe");
-				expect(result.value.email).toBe("john@example.com"); // unchanged
 			}
 		});
 	});
@@ -291,7 +277,6 @@ describe("ClientService", () => {
 			const mockClient = {
 				id: "123",
 				name: "John Doe",
-				email: "john@example.com",
 				cellphone: "11987654321",
 				createdAt: new Date(),
 				updatedAt: new Date(),
