@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull, lte, ne } from "drizzle-orm";
+import { and, eq, gt, gte, isNull, lt, lte, ne } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
@@ -311,6 +311,92 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 			return projected;
 		}, "Failed to project recurring appointments");
+	}
+
+	async hasConflictInAppointments(
+		userId: string,
+		startDate: Date,
+		endDate: Date,
+		excludedAppointmentId?: string,
+	) {
+		return wrapDatabaseOperation(async () => {
+			const exclusionCondition = excludedAppointmentId
+				? ne(appointments.id, excludedAppointmentId)
+				: undefined;
+
+			const conditions = [
+				eq(appointments.userId, userId),
+				eq(appointments.active, true),
+				isNull(appointments.deletedAt),
+				lt(appointments.startDate, endDate),
+				gt(appointments.endDate, startDate),
+				exclusionCondition,
+			].filter(Boolean) as Parameters<typeof and>;
+
+			const [conflict] = await db
+				.select({ id: appointments.id })
+				.from(appointments)
+				.where(and(...conditions))
+				.limit(1);
+
+			return Boolean(conflict);
+		}, "Failed to verify appointment conflicts");
+	}
+
+	async hasConflictInProjection(
+		userId: string,
+		startDate: Date,
+		endDate: Date,
+		excludedAppointmentId?: string,
+	) {
+		return wrapDatabaseOperation(async () => {
+			const recurringConditions = [
+				eq(appointments.userId, userId),
+				ne(appointments.recurrence, "none"),
+				eq(appointments.active, true),
+				isNull(appointments.deletedAt),
+				excludedAppointmentId
+					? ne(appointments.id, excludedAppointmentId)
+					: undefined,
+			].filter(Boolean) as Parameters<typeof and>;
+
+			const recurringAppointments = await db
+				.select({
+					id: appointments.id,
+					startDate: appointments.startDate,
+					endDate: appointments.endDate,
+					recurrence: appointments.recurrence,
+				})
+				.from(appointments)
+				.where(and(...recurringConditions));
+
+			for (const appointment of recurringAppointments) {
+				if (appointment.recurrence === "none") {
+					continue;
+				}
+
+				let currentStart = new Date(appointment.startDate);
+				let currentEnd = new Date(appointment.endDate);
+				let guard = 0;
+
+				while (currentStart < endDate && guard < 600) {
+					if (currentStart < endDate && currentEnd > startDate) {
+						return true;
+					}
+
+					currentStart = this.addRecurrenceDate(
+						currentStart,
+						appointment.recurrence,
+					);
+
+					currentEnd = this.addRecurrenceDate(currentEnd, appointment.recurrence);
+
+					guard += 1;
+				}
+			}
+
+			return false;
+		}, "Failed to verify projected appointment conflicts");
 	}
 
 	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {

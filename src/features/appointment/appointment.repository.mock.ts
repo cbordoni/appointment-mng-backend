@@ -232,6 +232,76 @@ export class MockAppointmentRepository
 		return ok(projected);
 	}
 
+	async hasConflictInAppointments(
+		userId: string,
+		startDate: Date,
+		endDate: Date,
+		excludedAppointmentId?: string,
+	) {
+		const hasConflict = this.items.some((appointment) => {
+			if (appointment.deletedAt) {
+				return false;
+			}
+
+			if (!appointment.active) {
+				return false;
+			}
+
+			if (appointment.userId !== userId) {
+				return false;
+			}
+
+			if (excludedAppointmentId && appointment.id === excludedAppointmentId) {
+				return false;
+			}
+
+			return appointment.startDate < endDate && appointment.endDate > startDate;
+		});
+
+		return ok(hasConflict);
+	}
+
+	async hasConflictInProjection(
+		userId: string,
+		startDate: Date,
+		endDate: Date,
+		excludedAppointmentId?: string,
+	) {
+		for (const appointment of this.items) {
+			if (appointment.deletedAt || !appointment.active) {
+				continue;
+			}
+
+			if (appointment.userId !== userId) {
+				continue;
+			}
+
+			if (appointment.recurrence === "none") {
+				continue;
+			}
+
+			if (excludedAppointmentId && appointment.id === excludedAppointmentId) {
+				continue;
+			}
+
+			let currentStart = new Date(appointment.startDate);
+			let currentEnd = new Date(appointment.endDate);
+			let guard = 0;
+
+			while (currentStart < endDate && guard < 600) {
+				if (currentStart < endDate && currentEnd > startDate) {
+					return ok(true);
+				}
+
+				currentStart = this.addRecurrenceDate(currentStart, appointment.recurrence);
+				currentEnd = this.addRecurrenceDate(currentEnd, appointment.recurrence);
+				guard += 1;
+			}
+		}
+
+		return ok(false);
+	}
+
 	async createEvent(appointmentId: string, data: CreateAppointmentEventInput) {
 		const appointmentResult = await this.findById(appointmentId);
 

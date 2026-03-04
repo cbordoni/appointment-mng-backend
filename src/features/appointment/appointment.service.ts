@@ -36,6 +36,47 @@ export class AppointmentService {
 			: ok(undefined);
 	}
 
+	private async validateProfessionalConflict(
+		userId: string,
+		startDate: Date,
+		endDate: Date,
+		excludedAppointmentId?: string,
+	): Promise<DomainResult<void>> {
+		const [appointmentsConflictResult, projectionConflictResult] =
+			await Promise.all([
+				this.repository.hasConflictInAppointments(
+					userId,
+					startDate,
+					endDate,
+					excludedAppointmentId,
+				),
+				this.repository.hasConflictInProjection(
+					userId,
+					startDate,
+					endDate,
+					excludedAppointmentId,
+				),
+			]);
+
+		if (appointmentsConflictResult.isErr()) {
+			return err(appointmentsConflictResult.error);
+		}
+
+		if (projectionConflictResult.isErr()) {
+			return err(projectionConflictResult.error);
+		}
+
+		if (appointmentsConflictResult.value || projectionConflictResult.value) {
+			return err(
+				new ValidationError(
+					"Professional has scheduling conflict for the selected period",
+				),
+			);
+		}
+
+		return ok(undefined);
+	}
+
 	async getAllAppointments(query: DateRangeQuery = {}) {
 		const from = query.from ? new Date(query.from) : undefined;
 		const to = query.to ? new Date(query.to) : undefined;
@@ -92,27 +133,51 @@ export class AppointmentService {
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.create(data)).map(async (value) => {
-			const scheduleResult = await this.scheduler.schedule({
-				id: value.id,
-				startDate: value.startDate,
-			});
+		const conflictValidationResult = await this.validateProfessionalConflict(
+			userId,
+			new Date(startDate),
+			new Date(endDate),
+		);
 
-			if (scheduleResult.isErr()) {
-				logger.warn("Failed to schedule appointment notifications", {
-					appointmentId: value.id,
-					error: scheduleResult.error.message,
-				});
-			}
+		if (conflictValidationResult.isErr()) {
+			return err(conflictValidationResult.error);
+		}
 
-			logger.info("Appointment created successfully", { id: value.id });
+		const createResult = await this.repository.create(data);
 
-			return ok(value);
+		if (createResult.isErr()) {
+			return err(createResult.error);
+		}
+
+		const value = createResult.value;
+
+		const scheduleResult = await this.scheduler.schedule({
+			id: value.id,
+			startDate: value.startDate,
 		});
+
+		if (scheduleResult.isErr()) {
+			logger.warn("Failed to schedule appointment notifications", {
+				appointmentId: value.id,
+				error: scheduleResult.error.message,
+			});
+		}
+
+		logger.info("Appointment created successfully", { id: value.id });
+
+		return ok(value);
 	}
 
 	async updateAppointment(id: string, data: UpdateAppointmentInput) {
 		logger.debug("Updating appointment", { id });
+
+		const currentAppointmentResult = await this.repository.findById(id);
+
+		if (currentAppointmentResult.isErr()) {
+			return err(currentAppointmentResult.error);
+		}
+
+		const currentAppointment = currentAppointmentResult.value;
 
 		const titleValidationResult =
 			data.title !== undefined ? this.validateTitle(data.title) : ok(undefined);
@@ -137,41 +202,65 @@ export class AppointmentService {
 			return err(validationResult.error);
 		}
 
-		return (await this.repository.update(id, data)).map(async (value) => {
-			const scheduleResult = await this.scheduler.reschedule({
-				id: value.id,
-				startDate: value.startDate,
-			});
+		const startDate = new Date(data.startDate ?? currentAppointment.startDate);
+		const endDate = new Date(data.endDate ?? currentAppointment.endDate);
 
-			if (scheduleResult.isErr()) {
-				logger.warn("Failed to reschedule appointment notifications", {
-					appointmentId: value.id,
-					error: scheduleResult.error.message,
-				});
-			}
+		const conflictValidationResult = await this.validateProfessionalConflict(
+			currentAppointment.userId,
+			startDate,
+			endDate,
+			id,
+		);
 
-			logger.info("Appointment updated successfully", { id });
+		if (conflictValidationResult.isErr()) {
+			return err(conflictValidationResult.error);
+		}
 
-			return ok(value);
+		const updateResult = await this.repository.update(id, data);
+
+		if (updateResult.isErr()) {
+			return err(updateResult.error);
+		}
+
+		const value = updateResult.value;
+
+		const scheduleResult = await this.scheduler.reschedule({
+			id: value.id,
+			startDate: value.startDate,
 		});
+
+		if (scheduleResult.isErr()) {
+			logger.warn("Failed to reschedule appointment notifications", {
+				appointmentId: value.id,
+				error: scheduleResult.error.message,
+			});
+		}
+
+		logger.info("Appointment updated successfully", { id });
+
+		return ok(value);
 	}
 
 	async deleteAppointment(id: string) {
 		logger.debug("Deleting appointment", { id });
 
-		return (await this.repository.delete(id)).map(async () => {
-			logger.info("Appointment deleted successfully", { id });
+		const deleteResult = await this.repository.delete(id);
 
-			await this.scheduler.clear(id).then((clearResult) => {
-				if (clearResult.isErr()) {
-					logger.warn("Failed to clear appointment notifications", {
-						appointmentId: id,
-						error: clearResult.error.message,
-					});
-				}
+		if (deleteResult.isErr()) {
+			return err(deleteResult.error);
+		}
+
+		logger.info("Appointment deleted successfully", { id });
+
+		const clearResult = await this.scheduler.clear(id);
+
+		if (clearResult.isErr()) {
+			logger.warn("Failed to clear appointment notifications", {
+				appointmentId: id,
+				error: clearResult.error.message,
 			});
+		}
 
-			return ok(undefined);
-		});
+		return ok(undefined);
 	}
 }

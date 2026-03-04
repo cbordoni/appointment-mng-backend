@@ -417,6 +417,58 @@ describe("AppointmentService", () => {
 				expect(result.error).toBeInstanceOf(ValidationError);
 			}
 		});
+
+		it("should fail when professional has conflict in appointments", async () => {
+			await repository.create(
+				makeAppointment({
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+				}),
+			);
+
+			const result = await service.createAppointment(
+				makeAppointment({
+					startDate: "2026-03-01T10:30:00.000Z",
+					endDate: "2026-03-01T11:30:00.000Z",
+				}),
+			);
+
+			expect(result.isErr()).toBe(true);
+
+			if (result.isErr()) {
+				expect(result.error).toBeInstanceOf(ValidationError);
+				expect(result.error.message).toBe(
+					"Professional has scheduling conflict for the selected period",
+				);
+			}
+		});
+
+		it("should fail when professional has conflict in projection", async () => {
+			await repository.create(
+				makeAppointment({
+					title: "Weekly session",
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+					recurrence: "weekly",
+				}),
+			);
+
+			const result = await service.createAppointment(
+				makeAppointment({
+					startDate: "2026-03-08T10:15:00.000Z",
+					endDate: "2026-03-08T10:45:00.000Z",
+				}),
+			);
+
+			expect(result.isErr()).toBe(true);
+
+			if (result.isErr()) {
+				expect(result.error).toBeInstanceOf(ValidationError);
+				expect(result.error.message).toBe(
+					"Professional has scheduling conflict for the selected period",
+				);
+			}
+		});
 	});
 
 	describe("updateAppointment", () => {
@@ -508,6 +560,79 @@ describe("AppointmentService", () => {
 
 			if (result.isErr()) {
 				expect(result.error.name).toBe("NotFoundError");
+			}
+		});
+
+		it("should fail when updating to conflicting appointment period", async () => {
+			const target = await repository.create(
+				makeAppointment({
+					title: "Target",
+					startDate: "2026-03-01T08:00:00.000Z",
+					endDate: "2026-03-01T09:00:00.000Z",
+				}),
+			);
+
+			await repository.create(
+				makeAppointment({
+					title: "Busy slot",
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+				}),
+			);
+
+			expect(target.isOk()).toBe(true);
+
+			if (target.isOk()) {
+				const result = await service.updateAppointment(target.value.id, {
+					startDate: "2026-03-01T10:15:00.000Z",
+					endDate: "2026-03-01T10:45:00.000Z",
+				});
+
+				expect(result.isErr()).toBe(true);
+
+				if (result.isErr()) {
+					expect(result.error).toBeInstanceOf(ValidationError);
+					expect(result.error.message).toBe(
+						"Professional has scheduling conflict for the selected period",
+					);
+				}
+			}
+		});
+
+		it("should fail when updating to conflicting projected period", async () => {
+			const target = await repository.create(
+				makeAppointment({
+					title: "Target",
+					startDate: "2026-03-01T08:00:00.000Z",
+					endDate: "2026-03-01T09:00:00.000Z",
+				}),
+			);
+
+			await repository.create(
+				makeAppointment({
+					title: "Weekly session",
+					startDate: "2026-03-01T10:00:00.000Z",
+					endDate: "2026-03-01T11:00:00.000Z",
+					recurrence: "weekly",
+				}),
+			);
+
+			expect(target.isOk()).toBe(true);
+
+			if (target.isOk()) {
+				const result = await service.updateAppointment(target.value.id, {
+					startDate: "2026-03-08T10:10:00.000Z",
+					endDate: "2026-03-08T10:50:00.000Z",
+				});
+
+				expect(result.isErr()).toBe(true);
+
+				if (result.isErr()) {
+					expect(result.error).toBeInstanceOf(ValidationError);
+					expect(result.error.message).toBe(
+						"Professional has scheduling conflict for the selected period",
+					);
+				}
 			}
 		});
 	});

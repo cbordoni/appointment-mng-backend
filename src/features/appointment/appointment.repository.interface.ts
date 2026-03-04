@@ -27,6 +27,12 @@ export interface IAppointmentRepository extends IRepository<Appointment, CreateA
 	findProjectedByDateRange(from?: Date, to?: Date): AsyncDomainResult<AppointmentProjection[]>;
 
 	// biome-ignore format: to keep the method signatures clear and consistent
+	hasConflictInAppointments(userId: string, startDate: Date, endDate: Date, excludedAppointmentId?: string): AsyncDomainResult<boolean>;
+
+	// biome-ignore format: to keep the method signatures clear and consistent
+	hasConflictInProjection(userId: string, startDate: Date, endDate: Date, excludedAppointmentId?: string): AsyncDomainResult<boolean>;
+
+	// biome-ignore format: to keep the method signatures clear and consistent
 	createEvent(appointmentId: string, data: CreateAppointmentEventInput): AsyncDomainResult<AppointmentEventWithSource>;
 
 	// biome-ignore format: to keep the method signatures clear and consistent
