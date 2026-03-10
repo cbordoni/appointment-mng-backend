@@ -1,18 +1,12 @@
 import { Elysia } from "elysia";
 
 import { PaginationQuerySchema } from "@/common/types";
-import { AppointmentOverrideController } from "./appointment-override.controller";
-import { AppointmentOverrideRepository } from "./appointment-override.repository";
-import { AppointmentOverrideService } from "./appointment-override.service";
+import { controller } from ".";
 import {
 	AppointmentOverrideIdSchema,
 	CreateAppointmentOverrideSchema,
 	UpdateAppointmentOverrideSchema,
 } from "./appointment-override.types";
-
-const repository = new AppointmentOverrideRepository();
-const service = new AppointmentOverrideService(repository);
-const controller = new AppointmentOverrideController(service);
 
 export const appointmentOverrideRoutes = new Elysia({
 	prefix: "/appointment-overrides",

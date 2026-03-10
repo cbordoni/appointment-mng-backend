@@ -64,6 +64,18 @@ CREATE TABLE "professionals" (
 	CONSTRAINT "professionals_tax_id_unique" UNIQUE("tax_id")
 );
 --> statement-breakpoint
+CREATE TABLE "stores" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"tax_id" text,
+	"email" text NOT NULL,
+	"cellphone" text NOT NULL,
+	"deleted_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "stores_tax_id_unique" UNIQUE("tax_id")
+);
+--> statement-breakpoint
 ALTER TABLE "appointment_exdates" ADD CONSTRAINT "appointment_exdates_appointment_id_appointments_id_fk" FOREIGN KEY ("appointment_id") REFERENCES "public"."appointments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "appointment_overrides" ADD CONSTRAINT "appointment_overrides_appointment_id_appointments_id_fk" FOREIGN KEY ("appointment_id") REFERENCES "public"."appointments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "appointment_overrides" ADD CONSTRAINT "appointment_overrides_professional_id_professionals_id_fk" FOREIGN KEY ("professional_id") REFERENCES "public"."professionals"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

@@ -7,6 +7,20 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 
+export const stores = pgTable("stores", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(),
+	taxId: text("tax_id").unique(),
+	email: text("email").notNull(),
+	cellphone: text("cellphone").notNull(),
+	deletedAt: timestamp("deleted_at"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Store = typeof stores.$inferSelect;
+export type NewStore = typeof stores.$inferInsert;
+
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),

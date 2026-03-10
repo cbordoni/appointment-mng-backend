@@ -1,18 +1,12 @@
 import { Elysia } from "elysia";
 
 import { PaginationQuerySchema } from "@/common/types";
-import { AppointmentExceptionController } from "./appointment-exception.controller";
-import { AppointmentExceptionRepository } from "./appointment-exception.repository";
-import { AppointmentExceptionService } from "./appointment-exception.service";
+import { controller } from ".";
 import {
 	AppointmentExceptionIdSchema,
 	CreateAppointmentExceptionSchema,
 	UpdateAppointmentExceptionSchema,
 } from "./appointment-exception.types";
-
-const repository = new AppointmentExceptionRepository();
-const service = new AppointmentExceptionService(repository);
-const controller = new AppointmentExceptionController(service);
 
 export const appointmentExceptionRoutes = new Elysia({
 	prefix: "/appointment-exceptions",

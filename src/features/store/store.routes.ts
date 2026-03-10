@@ -1,14 +1,15 @@
 import { Elysia } from "elysia";
 
 import { PaginationQuerySchema } from "@/common/types";
+
 import { controller } from ".";
 import {
-	CreateProfessionalSchema,
-	ProfessionalIdSchema,
-	UpdateProfessionalSchema,
-} from "./professional.types";
+	CreateStoreSchema,
+	StoreIdSchema,
+	UpdateStoreSchema,
+} from "./store.types";
 
-export const professionalRoutes = new Elysia({ prefix: "/professionals" })
+export const storeRoutes = new Elysia({ prefix: "/stores" })
 	.get(
 		"/",
 		async ({ query }) => {
@@ -17,8 +18,8 @@ export const professionalRoutes = new Elysia({ prefix: "/professionals" })
 		{
 			query: PaginationQuerySchema,
 			detail: {
-				summary: "Get all professionals with pagination",
-				tags: ["Professionals"],
+				summary: "Get all stores with pagination",
+				tags: ["Stores"],
 			},
 		},
 	)
@@ -28,10 +29,10 @@ export const professionalRoutes = new Elysia({ prefix: "/professionals" })
 			return await controller.getById(params.id);
 		},
 		{
-			params: ProfessionalIdSchema,
+			params: StoreIdSchema,
 			detail: {
-				summary: "Get professional by ID",
-				tags: ["Professionals"],
+				summary: "Get store by ID",
+				tags: ["Stores"],
 			},
 		},
 	)
@@ -41,10 +42,10 @@ export const professionalRoutes = new Elysia({ prefix: "/professionals" })
 			return await controller.create(body);
 		},
 		{
-			body: CreateProfessionalSchema,
+			body: CreateStoreSchema,
 			detail: {
-				summary: "Create a new professional",
-				tags: ["Professionals"],
+				summary: "Create a new store",
+				tags: ["Stores"],
 			},
 		},
 	)
@@ -54,11 +55,11 @@ export const professionalRoutes = new Elysia({ prefix: "/professionals" })
 			return await controller.update(params.id, body);
 		},
 		{
-			params: ProfessionalIdSchema,
-			body: UpdateProfessionalSchema,
+			params: StoreIdSchema,
+			body: UpdateStoreSchema,
 			detail: {
-				summary: "Update a professional",
-				tags: ["Professionals"],
+				summary: "Update a store",
+				tags: ["Stores"],
 			},
 		},
 	)
@@ -68,10 +69,10 @@ export const professionalRoutes = new Elysia({ prefix: "/professionals" })
 			return await controller.delete(params.id);
 		},
 		{
-			params: ProfessionalIdSchema,
+			params: StoreIdSchema,
 			detail: {
-				summary: "Delete a professional",
-				tags: ["Professionals"],
+				summary: "Delete a store",
+				tags: ["Stores"],
 			},
 		},
 	);

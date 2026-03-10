@@ -13,6 +13,7 @@ import { appointmentProjectionRoutes } from "@/features/appointment-projection/a
 import { clientRoutes } from "@/features/client/client.routes";
 import { healthRoutes } from "@/features/health/health.routes";
 import { professionalRoutes } from "@/features/professional/professional.routes";
+import { storeRoutes } from "./features/store/store.routes";
 
 const version = Bun.env.npm_package_version ?? "1.0.0";
 
@@ -32,6 +33,7 @@ export const app = new Elysia()
 					description: "A modern backend API built with Bun and Elysia",
 				},
 				tags: [
+					{ name: "Stores", description: "Store management endpoints" },
 					{ name: "Clients", description: "Client management endpoints" },
 					{
 						name: "Professionals",
@@ -64,6 +66,7 @@ export const app = new Elysia()
 		},
 	})
 	.use(healthRoutes)
+	.use(storeRoutes)
 	.use(clientRoutes)
 	.use(professionalRoutes)
 	.use(appointmentExceptionRoutes)
