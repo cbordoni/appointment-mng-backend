@@ -22,7 +22,8 @@
 		"elysia-prometheus": "^1.1.1",
 		"ioredis": "^5.9.3",
 		"neverthrow": "^8.2.0",
-		"postgres": "^3.4.8"
+		"postgres": "^3.4.8",
+		"rrule": "^2.8.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.4",

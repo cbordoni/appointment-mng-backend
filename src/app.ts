@@ -9,6 +9,7 @@ import { requestLoggerPlugin } from "@/common/http/request-logger.plugin";
 import { appointmentRoutes } from "@/features/appointment/appointment.routes";
 import { appointmentExceptionRoutes } from "@/features/appointment-exception/appointment-exception.routes";
 import { appointmentOverrideRoutes } from "@/features/appointment-override/appointment-override.routes";
+import { appointmentProjectionRoutes } from "@/features/appointment-projection/appointment-projection.routes";
 import { clientRoutes } from "@/features/client/client.routes";
 import { healthRoutes } from "@/features/health/health.routes";
 import { professionalRoutes } from "@/features/professional/professional.routes";
@@ -48,6 +49,10 @@ export const app = new Elysia()
 						name: "AppointmentOverrides",
 						description: "Appointment override management endpoints",
 					},
+					{
+						name: "AppointmentProjections",
+						description: "Projected appointment occurrences by date range",
+					},
 				],
 			},
 		}),
@@ -63,4 +68,5 @@ export const app = new Elysia()
 	.use(professionalRoutes)
 	.use(appointmentExceptionRoutes)
 	.use(appointmentOverrideRoutes)
+	.use(appointmentProjectionRoutes)
 	.use(appointmentRoutes);
