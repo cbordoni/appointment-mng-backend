@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1772653995294,
-      "tag": "0000_nice_winter_soldier",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772654995294,
-      "tag": "0001_strange_soft_delete",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1772700000000,
-      "tag": "0002_dark_rrule_migration",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772900000000,
-      "tag": "0003_icalendar_appointments",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1773101964154,
-      "tag": "0004_same_mantis",
+      "when": 1773180908899,
+      "tag": "0000_steady_roland_deschain",
       "breakpoints": true
     }
   ]
