@@ -35,8 +35,8 @@ const makeAppointment = (
 	uid: "appointment-101@appointment.local",
 	summary: "Consulta",
 	description: "Retorno",
-	dtstart: new Date("2026-03-10T10:00:00.000Z"),
-	dtend: new Date("2026-03-10T11:00:00.000Z"),
+	dtStart: new Date("2026-03-10T10:00:00.000Z"),
+	dtEnd: new Date("2026-03-10T11:00:00.000Z"),
 	timezone: "UTC",
 	rrule: null,
 	status: "CONFIRMED",
@@ -118,8 +118,8 @@ describe("AppointmentProjectionService", () => {
 							recurrenceId: new Date("2026-03-12T10:00:00.000Z"),
 							summary: "Consulta ajustada",
 							description: "Mudança de horário",
-							dtstart: new Date("2026-03-12T12:00:00.000Z"),
-							dtend: new Date("2026-03-12T13:00:00.000Z"),
+							dtStart: new Date("2026-03-12T12:00:00.000Z"),
+							dtEnd: new Date("2026-03-12T13:00:00.000Z"),
 							status: "CONFIRMED",
 							professionalId: "00000000-0000-0000-0000-000000000011",
 						},
@@ -137,12 +137,12 @@ describe("AppointmentProjectionService", () => {
 			if (result.isOk()) {
 				expect(result.value).toHaveLength(2);
 
-				expect(result.value[0].dtstart.toISOString()).toBe(
+				expect(result.value[0].dtStart.toISOString()).toBe(
 					"2026-03-10T10:00:00.000Z",
 				);
 				expect(result.value[0].source).toBe("APPOINTMENT");
 
-				expect(result.value[1].dtstart.toISOString()).toBe(
+				expect(result.value[1].dtStart.toISOString()).toBe(
 					"2026-03-12T12:00:00.000Z",
 				);
 				expect(result.value[1].source).toBe("OVERRIDE");
@@ -165,8 +165,8 @@ describe("AppointmentProjectionService", () => {
 							recurrenceId: new Date("2026-03-11T10:00:00.000Z"),
 							summary: null,
 							description: null,
-							dtstart: null,
-							dtend: null,
+							dtStart: null,
+							dtEnd: null,
 							status: "CANCELLED",
 							professionalId: null,
 						},
@@ -183,7 +183,7 @@ describe("AppointmentProjectionService", () => {
 
 			if (result.isOk()) {
 				expect(result.value).toHaveLength(1);
-				expect(result.value[0].dtstart.toISOString()).toBe(
+				expect(result.value[0].dtStart.toISOString()).toBe(
 					"2026-03-10T10:00:00.000Z",
 				);
 			}

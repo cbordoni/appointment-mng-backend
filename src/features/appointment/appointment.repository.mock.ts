@@ -61,9 +61,9 @@ export class MockAppointmentRepository
 		const filtered = this.items.filter((a) => {
 			if (a.deletedAt) return false;
 
-			if (from && a.dtstart < from) return false;
+			if (from && a.dtStart < from) return false;
 
-			if (to && a.dtstart > to) return false;
+			if (to && a.dtStart > to) return false;
 
 			return true;
 		});
@@ -96,8 +96,8 @@ export class MockAppointmentRepository
 			uid: data.uid ?? `${id}@appointment.local`,
 			summary: data.summary,
 			description: data.description ?? null,
-			dtstart: new Date(data.dtstart),
-			dtend: new Date(data.dtend),
+			dtStart: new Date(data.dtStart),
+			dtEnd: new Date(data.dtEnd),
 			timezone: data.timezone ?? "UTC",
 			rrule: data.rrule ?? null,
 			status: data.status ?? "CONFIRMED",
@@ -159,10 +159,10 @@ export class MockAppointmentRepository
 			...(data.description !== undefined && {
 				description: data.description,
 			}),
-			...(data.dtstart !== undefined && {
-				dtstart: new Date(data.dtstart),
+			...(data.dtStart !== undefined && {
+				dtStart: new Date(data.dtStart),
 			}),
-			...(data.dtend !== undefined && { dtend: new Date(data.dtend) }),
+			...(data.dtEnd !== undefined && { dtEnd: new Date(data.dtEnd) }),
 			...(data.timezone !== undefined && { timezone: data.timezone }),
 			...("rrule" in data && { rrule: data.rrule ?? null }),
 			...(data.status !== undefined && { status: data.status }),
@@ -184,8 +184,8 @@ export class MockAppointmentRepository
 
 	async hasConflictInAppointments(
 		professionalId: string,
-		dtstart: Date,
-		dtend: Date,
+		dtStart: Date,
+		dtEnd: Date,
 		excludedAppointmentId?: string,
 	) {
 		const hasConflict = this.items.some((appointment) => {
@@ -205,7 +205,7 @@ export class MockAppointmentRepository
 				return false;
 			}
 
-			return appointment.dtstart < dtend && appointment.dtend > dtstart;
+			return appointment.dtStart < dtEnd && appointment.dtEnd > dtStart;
 		});
 
 		return ok(hasConflict);

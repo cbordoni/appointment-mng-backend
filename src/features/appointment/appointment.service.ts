@@ -19,12 +19,12 @@ export class AppointmentService {
 		private readonly scheduler: IScheduler,
 	) {}
 
-	private validateDates(dtstart: string, dtend: string): DomainResult<void> {
-		const start = new Date(dtstart);
-		const end = new Date(dtend);
+	private validateDates(dtStart: string, dtEnd: string): DomainResult<void> {
+		const start = new Date(dtStart);
+		const end = new Date(dtEnd);
 
 		return start >= end
-			? err(new ValidationError("dtstart must be before dtend"))
+			? err(new ValidationError("dtStart must be before dtEnd"))
 			: ok(undefined);
 	}
 
@@ -51,15 +51,15 @@ export class AppointmentService {
 
 	private async validateProfessionalConflict(
 		professionalId: string,
-		dtstart: Date,
-		dtend: Date,
+		dtStart: Date,
+		dtEnd: Date,
 		excludedAppointmentId?: string,
 	): Promise<DomainResult<void>> {
 		const appointmentsConflictResult =
 			await this.repository.hasConflictInAppointments(
 				professionalId,
-				dtstart,
-				dtend,
+				dtStart,
+				dtEnd,
 				excludedAppointmentId,
 			);
 
@@ -150,14 +150,14 @@ export class AppointmentService {
 	}
 
 	async createAppointment(data: CreateAppointmentInput) {
-		const { summary, dtstart, dtend, clientId, professionalId, rrule } = data;
+		const { summary, dtStart, dtEnd, clientId, professionalId, rrule } = data;
 
 		logger.debug("Creating appointment", { clientId });
 
 		const validationResult = this.validateSummary(summary)
 			.andThen(() => this.validateRRule(rrule))
 			// Validate dates only if both are provided
-			.andThen(() => this.validateDates(dtstart, dtend));
+			.andThen(() => this.validateDates(dtStart, dtEnd));
 
 		if (validationResult.isErr()) {
 			return err(validationResult.error);
@@ -165,8 +165,8 @@ export class AppointmentService {
 
 		const conflictValidationResult = await this.validateProfessionalConflict(
 			professionalId,
-			new Date(dtstart),
-			new Date(dtend),
+			new Date(dtStart),
+			new Date(dtEnd),
 		);
 
 		if (conflictValidationResult.isErr()) {
@@ -183,7 +183,7 @@ export class AppointmentService {
 
 		const scheduleResult = await this.scheduler.schedule({
 			id: value.id,
-			startDate: value.dtstart,
+			startDate: value.dtStart,
 		});
 
 		if (scheduleResult.isErr()) {
@@ -224,30 +224,30 @@ export class AppointmentService {
 			return err(rruleValidationResult.error);
 		}
 
-		const hasDtstart = data.dtstart !== undefined;
-		const hasDtend = data.dtend !== undefined;
+		const hasDtStart = data.dtStart !== undefined;
+		const hasDtEnd = data.dtEnd !== undefined;
 
 		const datesValidationResult =
-			hasDtstart && hasDtend
-				? this.validateDates(data.dtstart as string, data.dtend as string)
+			hasDtStart && hasDtEnd
+				? this.validateDates(data.dtStart as string, data.dtEnd as string)
 				: ok(undefined);
 
 		const validationResult = summaryValidationResult
 			.andThen(() => rruleValidationResult)
-			// Validate dates only if both dtstart and dtend are provided
+			// Validate dates only if both dtStart and dtEnd are provided
 			.andThen(() => datesValidationResult);
 
 		if (validationResult.isErr()) {
 			return err(validationResult.error);
 		}
 
-		const dtstart = new Date(data.dtstart ?? currentAppointment.dtstart);
-		const dtend = new Date(data.dtend ?? currentAppointment.dtend);
+		const dtStart = new Date(data.dtStart ?? currentAppointment.dtStart);
+		const dtEnd = new Date(data.dtEnd ?? currentAppointment.dtEnd);
 
 		const conflictValidationResult = await this.validateProfessionalConflict(
 			data.professionalId ?? currentAppointment.professionalId,
-			dtstart,
-			dtend,
+			dtStart,
+			dtEnd,
 			id,
 		);
 
@@ -265,7 +265,7 @@ export class AppointmentService {
 
 		const scheduleResult = await this.scheduler.reschedule({
 			id: value.id,
-			startDate: value.dtstart,
+			startDate: value.dtStart,
 		});
 
 		if (scheduleResult.isErr()) {

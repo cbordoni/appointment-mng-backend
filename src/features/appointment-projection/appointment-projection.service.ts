@@ -46,7 +46,7 @@ export class AppointmentProjectionService {
 	): AppointmentProjectionItem[] {
 		const appointment = row.appointment;
 		const duration =
-			appointment.dtend.getTime() - appointment.dtstart.getTime();
+			appointment.dtEnd.getTime() - appointment.dtStart.getTime();
 		const exdateSet = new Set(row.exdates.map((exdate) => exdate.getTime()));
 		const overrideByRecurrence = new Map(
 			row.overrides.map((override) => [
@@ -58,13 +58,13 @@ export class AppointmentProjectionService {
 		const baseStarts = (() => {
 			if (!appointment.rrule) {
 				const intersectsRange =
-					appointment.dtstart < to && appointment.dtend > from;
+					appointment.dtStart < to && appointment.dtEnd > from;
 
-				return intersectsRange ? [appointment.dtstart] : [];
+				return intersectsRange ? [appointment.dtStart] : [];
 			}
 
 			const parsedRule = rrulestr(
-				`DTSTART:${this.toRRuleDateTime(appointment.dtstart)}\nRRULE:${appointment.rrule}`,
+				`DTSTART:${this.toRRuleDateTime(appointment.dtStart)}\nRRULE:${appointment.rrule}`,
 			);
 
 			return parsedRule.between(from, to, true);
@@ -81,9 +81,9 @@ export class AppointmentProjectionService {
 					continue;
 				}
 
-				const occurrenceStart = override.dtstart ?? baseStart;
+				const occurrenceStart = override.dtStart ?? baseStart;
 				const occurrenceEnd =
-					override.dtend ?? new Date(occurrenceStart.getTime() + duration);
+					override.dtEnd ?? new Date(occurrenceStart.getTime() + duration);
 
 				if (occurrenceStart >= to || occurrenceEnd <= from) {
 					continue;
@@ -102,8 +102,8 @@ export class AppointmentProjectionService {
 						| "TENTATIVE"
 						| "CONFIRMED"
 						| "CANCELLED",
-					dtstart: occurrenceStart,
-					dtend: occurrenceEnd,
+					dtStart: occurrenceStart,
+					dtEnd: occurrenceEnd,
 					timezone: appointment.timezone,
 					recurrenceId: baseStart,
 					source: "OVERRIDE",
@@ -126,8 +126,8 @@ export class AppointmentProjectionService {
 				summary: appointment.summary,
 				description: appointment.description,
 				status: appointment.status as "TENTATIVE" | "CONFIRMED" | "CANCELLED",
-				dtstart: baseStart,
-				dtend: new Date(baseStart.getTime() + duration),
+				dtStart: baseStart,
+				dtEnd: new Date(baseStart.getTime() + duration),
 				timezone: appointment.timezone,
 				recurrenceId: appointment.rrule ? baseStart : null,
 				source: "APPOINTMENT",
@@ -159,7 +159,7 @@ export class AppointmentProjectionService {
 
 		const items = contextResult.value
 			.flatMap((row) => this.resolveOccurrences(row, range.from, range.to))
-			.sort((left, right) => left.dtstart.getTime() - right.dtstart.getTime());
+			.sort((left, right) => left.dtStart.getTime() - right.dtStart.getTime());
 
 		logger.info("Appointment projection generated", { count: items.length });
 

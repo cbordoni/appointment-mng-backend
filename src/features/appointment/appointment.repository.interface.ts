@@ -21,5 +21,5 @@ export interface IAppointmentRepository extends IRepository<Appointment, CreateA
 	findByProfessionalId(professionalId: string, page: number, limit: number): AsyncDomainResult<PaginatedResult<Appointment>>;
 
 	// biome-ignore format: to keep the method signatures clear and consistent
-	hasConflictInAppointments(professionalId: string, dtstart: Date, dtend: Date, excludedAppointmentId?: string): AsyncDomainResult<boolean>;
+	hasConflictInAppointments(professionalId: string, dtStart: Date, dtEnd: Date, excludedAppointmentId?: string): AsyncDomainResult<boolean>;
 }

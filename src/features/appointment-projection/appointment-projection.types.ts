@@ -26,8 +26,8 @@ export type AppointmentProjectionRow = {
 		recurrenceId: Date;
 		summary: string | null;
 		description: string | null;
-		dtstart: Date | null;
-		dtend: Date | null;
+		dtStart: Date | null;
+		dtEnd: Date | null;
 		status: string | null;
 		professionalId: string | null;
 	}[];
@@ -43,8 +43,8 @@ export type AppointmentProjectionItem = {
 	summary: string;
 	description: string | null;
 	status: "TENTATIVE" | "CONFIRMED" | "CANCELLED";
-	dtstart: Date;
-	dtend: Date;
+	dtStart: Date;
+	dtEnd: Date;
 	timezone: string;
 	recurrenceId: Date | null;
 	source: "APPOINTMENT" | "OVERRIDE";
@@ -60,8 +60,8 @@ export const AppointmentProjectionItemSchema = t.Object({
 	summary: t.String(),
 	description: t.Nullable(t.String()),
 	status: EventStatusSchema,
-	dtstart: t.Date(),
-	dtend: t.Date(),
+	dtStart: t.Date(),
+	dtEnd: t.Date(),
 	timezone: t.String(),
 	recurrenceId: t.Nullable(t.Date()),
 	source: t.Union([t.Literal("APPOINTMENT"), t.Literal("OVERRIDE")]),

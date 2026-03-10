@@ -39,8 +39,8 @@ const makeAppointment = (
 	overrides: Partial<CreateAppointmentInput> = {},
 ): CreateAppointmentInput => ({
 	summary: "Therapy Session",
-	dtstart: "2026-03-01T10:00:00.000Z",
-	dtend: "2026-03-01T11:00:00.000Z",
+	dtStart: "2026-03-01T10:00:00.000Z",
+	dtEnd: "2026-03-01T11:00:00.000Z",
 	clientId: BASE_CLIENT_ID,
 	professionalId: BASE_PROFESSIONAL_ID,
 	...overrides,
@@ -123,15 +123,15 @@ describe("AppointmentService", () => {
 		it("should fail when professional has conflict in appointments", async () => {
 			await repository.create(
 				makeAppointment({
-					dtstart: "2026-03-01T10:00:00.000Z",
-					dtend: "2026-03-01T11:00:00.000Z",
+					dtStart: "2026-03-01T10:00:00.000Z",
+					dtEnd: "2026-03-01T11:00:00.000Z",
 				}),
 			);
 
 			const result = await service.createAppointment(
 				makeAppointment({
-					dtstart: "2026-03-01T10:30:00.000Z",
-					dtend: "2026-03-01T11:30:00.000Z",
+					dtStart: "2026-03-01T10:30:00.000Z",
+					dtEnd: "2026-03-01T11:30:00.000Z",
 				}),
 			);
 

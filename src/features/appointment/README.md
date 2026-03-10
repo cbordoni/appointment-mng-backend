@@ -40,8 +40,8 @@ Prefixo: `/appointments`
   "uid": "consult-001@clinic.local",
   "summary": "Consulta",
   "description": "Levar exames",
-  "dtstart": "2026-03-02T10:00:00.000Z",
-  "dtend": "2026-03-02T11:00:00.000Z",
+  "dtStart": "2026-03-02T10:00:00.000Z",
+  "dtEnd": "2026-03-02T11:00:00.000Z",
   "timezone": "America/Sao_Paulo",
   "rrule": "FREQ=WEEKLY;BYDAY=MO",
   "status": "CONFIRMED",
@@ -62,8 +62,8 @@ Prefixo: `/appointments`
 ```json
 {
   "summary": "Consulta de retorno",
-  "dtstart": "2026-03-09T10:00:00.000Z",
-  "dtend": "2026-03-09T11:00:00.000Z",
+  "dtStart": "2026-03-09T10:00:00.000Z",
+  "dtEnd": "2026-03-09T11:00:00.000Z",
   "rrule": "FREQ=MONTHLY;BYMONTHDAY=9",
   "status": "TENTATIVE",
   "description": null,

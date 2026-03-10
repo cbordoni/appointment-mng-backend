@@ -38,8 +38,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 				isNull(appointments.deletedAt),
 				isNull(clients.deletedAt),
 				isNull(professionals.deletedAt),
-				from ? gte(appointments.dtstart, from) : undefined,
-				to ? lte(appointments.dtstart, to) : undefined,
+				from ? gte(appointments.dtStart, from) : undefined,
+				to ? lte(appointments.dtStart, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;
 
 			const baseQuery = db
@@ -48,8 +48,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 					uid: appointments.uid,
 					summary: appointments.summary,
 					description: appointments.description,
-					dtstart: appointments.dtstart,
-					dtend: appointments.dtend,
+					dtStart: appointments.dtStart,
+					dtEnd: appointments.dtEnd,
 					timezone: appointments.timezone,
 					clientId: appointments.clientId,
 					professionalId: appointments.professionalId,
@@ -160,8 +160,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 					uid,
 					summary: data.summary,
 					description: data.description ?? null,
-					dtstart: new Date(data.dtstart),
-					dtend: new Date(data.dtend),
+					dtStart: new Date(data.dtStart),
+					dtEnd: new Date(data.dtEnd),
 					timezone: data.timezone ?? "UTC",
 					rrule: data.rrule ?? null,
 					status: data.status ?? "CONFIRMED",
@@ -193,10 +193,10 @@ export class AppointmentRepository implements IAppointmentRepository {
 					...(data.description !== undefined && {
 						description: data.description,
 					}),
-					...(data.dtstart !== undefined && {
-						dtstart: new Date(data.dtstart),
+					...(data.dtStart !== undefined && {
+						dtStart: new Date(data.dtStart),
 					}),
-					...(data.dtend !== undefined && { dtend: new Date(data.dtend) }),
+					...(data.dtEnd !== undefined && { dtEnd: new Date(data.dtEnd) }),
 					...(data.timezone !== undefined && { timezone: data.timezone }),
 					...("rrule" in data && { rrule: data.rrule ?? null }),
 					...(data.status !== undefined && { status: data.status }),
@@ -257,8 +257,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 	async hasConflictInAppointments(
 		professionalId: string,
-		dtstart: Date,
-		dtend: Date,
+		dtStart: Date,
+		dtEnd: Date,
 		excludedAppointmentId?: string,
 	) {
 		return wrapDatabaseOperation(async () => {
@@ -270,8 +270,8 @@ export class AppointmentRepository implements IAppointmentRepository {
 				eq(appointments.professionalId, professionalId),
 				ne(appointments.status, "CANCELLED"),
 				isNull(appointments.deletedAt),
-				lt(appointments.dtstart, dtend),
-				gt(appointments.dtend, dtstart),
+				lt(appointments.dtStart, dtEnd),
+				gt(appointments.dtEnd, dtStart),
 				exclusionCondition,
 			].filter(Boolean) as Parameters<typeof and>;
 
