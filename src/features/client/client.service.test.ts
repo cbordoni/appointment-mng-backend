@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 
 import { ValidationError } from "@/common/errors";
-
+import { MockStoreRepository } from "@/features/store/store.repository.mock";
 import { MockClientRepository } from "./client.repository.mock";
 import { ClientService } from "./client.service";
 import type { CreateClientInput, UpdateClientInput } from "./client.types";
@@ -9,10 +9,20 @@ import type { CreateClientInput, UpdateClientInput } from "./client.types";
 describe("ClientService", () => {
 	let clientService: ClientService;
 	let mockRepository: MockClientRepository;
+	let mockStoreRepository: MockStoreRepository;
+
+	const validStoreId = "00000000-0000-0000-0000-000000000010";
+	const anotherValidStoreId = "00000000-0000-0000-0000-000000000011";
+	const invalidStoreId = "00000000-0000-0000-0000-000000000099";
 
 	beforeEach(() => {
 		mockRepository = new MockClientRepository();
-		clientService = new ClientService(mockRepository);
+		mockStoreRepository = new MockStoreRepository();
+		mockStoreRepository.setExistingStoreIds([
+			validStoreId,
+			anotherValidStoreId,
+		]);
+		clientService = new ClientService(mockRepository, mockStoreRepository);
 	});
 
 	describe("getAllClients", () => {
@@ -23,6 +33,7 @@ describe("ClientService", () => {
 					name: "John Doe",
 					taxId: null,
 					cellphone: "1234567890",
+					storeId: validStoreId,
 					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -32,6 +43,7 @@ describe("ClientService", () => {
 					name: "Jane Doe",
 					taxId: null,
 					cellphone: "0987654321",
+					storeId: validStoreId,
 					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -60,6 +72,7 @@ describe("ClientService", () => {
 				name: `Client ${i + 1}`,
 				taxId: null,
 				cellphone: "1234567890",
+				storeId: validStoreId,
 				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -101,6 +114,7 @@ describe("ClientService", () => {
 				name: "John Doe",
 				taxId: null,
 				cellphone: "1234567890",
+				storeId: validStoreId,
 				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -136,6 +150,7 @@ describe("ClientService", () => {
 			const input: CreateClientInput = {
 				name: "John Doe",
 				cellphone: "11987654321",
+				storeId: validStoreId,
 			};
 
 			const result = await clientService.createClient(input);
@@ -154,6 +169,7 @@ describe("ClientService", () => {
 			const input: CreateClientInput = {
 				name: "   ",
 				cellphone: "11987654321",
+				storeId: validStoreId,
 			};
 
 			const result = await clientService.createClient(input);
@@ -170,6 +186,7 @@ describe("ClientService", () => {
 			const input: CreateClientInput = {
 				name: "John Doe",
 				cellphone: "123", // Too short
+				storeId: validStoreId,
 			};
 
 			const result = await clientService.createClient(input);
@@ -186,11 +203,29 @@ describe("ClientService", () => {
 			const input: CreateClientInput = {
 				name: "John Doe",
 				cellphone: "(11) 98765-4321",
+				storeId: validStoreId,
 			};
 
 			const result = await clientService.createClient(input);
 
 			expect(result.isOk()).toBe(true);
+		});
+
+		it("should fail when store does not exist", async () => {
+			const input: CreateClientInput = {
+				name: "John Doe",
+				cellphone: "11987654321",
+				storeId: invalidStoreId,
+			};
+
+			const result = await clientService.createClient(input);
+
+			expect(result.isErr()).toBe(true);
+
+			if (result.isErr()) {
+				expect(result.error).toBeInstanceOf(ValidationError);
+				expect(result.error.message).toBe("Store not found");
+			}
 		});
 	});
 
@@ -201,6 +236,7 @@ describe("ClientService", () => {
 				name: "John Doe",
 				taxId: null,
 				cellphone: "11987654321",
+				storeId: validStoreId,
 				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -289,6 +325,7 @@ describe("ClientService", () => {
 				name: "John Doe",
 				taxId: null,
 				cellphone: "11987654321",
+				storeId: validStoreId,
 				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),

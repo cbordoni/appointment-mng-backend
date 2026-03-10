@@ -1,18 +1,12 @@
 import { Elysia } from "elysia";
 
 import { PaginationQuerySchema } from "@/common/types";
-import { ClientController } from "./client.controller";
-import { ClientRepository } from "./client.repository";
-import { ClientService } from "./client.service";
+import { controller } from ".";
 import {
 	ClientIdSchema,
 	CreateClientSchema,
 	UpdateClientSchema,
 } from "./client.types";
-
-const repository = new ClientRepository();
-const service = new ClientService(repository);
-const controller = new ClientController(service);
 
 export const clientRoutes = new Elysia({ prefix: "/clients" })
 	.get(

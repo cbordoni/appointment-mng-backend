@@ -65,6 +65,7 @@ export class ClientRepository implements IClientRepository {
 						name: data.name,
 						cellphone: data.cellphone,
 						taxId: data.taxId,
+						storeId: data.storeId,
 						deletedAt: null,
 					})
 					.returning(),

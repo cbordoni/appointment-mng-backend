@@ -1,6 +1,7 @@
 # Client Feature
 
 Responsável pelo ciclo de vida de clientes (CRUD) com paginação na listagem.
+Cada cliente pertence a uma store via `storeId`.
 
 ## Responsabilidades
 
@@ -32,6 +33,7 @@ Prefixo: `/clients`
 {
   "name": "Nome",
   "cellphone": "11999999999",
+  "storeId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -44,6 +46,7 @@ Prefixo: `/clients`
 {
   "name": "Novo nome",
   "cellphone": "11999999999",
+  "storeId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 

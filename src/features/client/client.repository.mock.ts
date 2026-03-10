@@ -50,6 +50,7 @@ export class MockClientRepository
 			name: data.name,
 			taxId: data.taxId ?? null,
 			cellphone: data.cellphone,
+			storeId: data.storeId,
 			deletedAt: null,
 			createdAt: new Date(),
 			updatedAt: new Date(),

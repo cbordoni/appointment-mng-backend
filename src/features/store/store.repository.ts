@@ -10,6 +10,19 @@ import type { IStoreRepository } from "./store.repository.interface";
 import type { CreateStoreInput, UpdateStoreInput } from "./store.types";
 
 export class StoreRepository implements IStoreRepository {
+	async exists(id: string) {
+		const result = await wrapDatabaseOperation(
+			() =>
+				db
+					.select({ id: stores.id })
+					.from(stores)
+					.where(and(eq(stores.id, id), isNull(stores.deletedAt))),
+			"Failed to check store existence",
+		);
+
+		return result.map(([store]) => !!store);
+	}
+
 	async findAll(page: number, limit: number) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;

@@ -26,6 +26,9 @@ export const clients = pgTable("clients", {
 	name: text("name").notNull(),
 	taxId: text("tax_id").unique(),
 	cellphone: text("cellphone").notNull(),
+	storeId: uuid("store_id")
+		.notNull()
+		.references(() => stores.id, { onDelete: "cascade" }),
 	deletedAt: timestamp("deleted_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),

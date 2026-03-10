@@ -12,7 +12,9 @@ import {
 	type NewAppointmentOverride,
 	type NewClient,
 	type NewProfessional,
+	type NewStore,
 	professionals,
+	stores,
 } from "@/db/schema";
 
 const connectionString = Bun.env.DATABASE_URL;
@@ -29,24 +31,49 @@ const professionalIds = {
 	fernanda: "5db5eb06-a67f-4f11-8014-b5cab6ee2ca8",
 } as const;
 
+const storeIds = {
+	matriz: "2cae7e15-e4b8-4c0e-8dce-c20f15327f22",
+	moema: "0088dca4-c157-4588-bd14-34e5dd6bd58e",
+} as const;
+
+const storesSeedData: NewStore[] = [
+	{
+		id: storeIds.matriz,
+		name: "Clínica Matriz",
+		taxId: "11111111000191",
+		email: "matriz@clinica.local",
+		cellphone: "+55 (11) 91111-1111",
+	},
+	{
+		id: storeIds.moema,
+		name: "Clínica Moema",
+		taxId: "22222222000191",
+		email: "moema@clinica.local",
+		cellphone: "+55 (11) 92222-2222",
+	},
+] as const;
+
 const clientsSeedData: NewClient[] = [
 	{
 		id: clientIds.joana,
 		name: "Joana Silva",
 		taxId: "12345678900",
 		cellphone: "+55 (11) 98888-1111",
+		storeId: storeIds.matriz,
 	},
 	{
 		id: clientIds.carlos,
 		name: "Carlos Souza",
 		taxId: "98765432100",
 		cellphone: "+55 (11) 97777-2222",
+		storeId: storeIds.moema,
 	},
 	{
 		id: clientIds.marina,
 		name: "Marina Lima",
 		taxId: "11223344567",
 		cellphone: "+55 (11) 96666-3333",
+		storeId: storeIds.matriz,
 	},
 ] as const;
 
@@ -172,7 +199,9 @@ async function seedDatabase(): Promise<void> {
 			await tx.delete(appointments);
 			await tx.delete(professionals);
 			await tx.delete(clients);
+			await tx.delete(stores);
 
+			await tx.insert(stores).values(storesSeedData);
 			await tx.insert(clients).values(clientsSeedData);
 			await tx.insert(professionals).values(professionalsSeedData);
 			await tx.insert(appointments).values(appointmentsSeedData);
@@ -183,6 +212,7 @@ async function seedDatabase(): Promise<void> {
 		});
 
 		logger.info("Database seed completed", {
+			stores: storesSeedData.length,
 			clients: clientsSeedData.length,
 			professionals: professionalsSeedData.length,
 			appointments: appointmentsSeedData.length,

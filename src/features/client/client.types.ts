@@ -4,6 +4,7 @@ export const CreateClientSchema = t.Object({
 	name: t.String({ minLength: 1 }),
 	cellphone: t.String({ minLength: 10, maxLength: 15 }),
 	taxId: t.Optional(t.String({ minLength: 9, maxLength: 15 })),
+	storeId: t.String({ format: "uuid" }),
 });
 
 export const UpdateClientSchema = t.Object({
