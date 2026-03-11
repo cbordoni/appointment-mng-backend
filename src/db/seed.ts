@@ -3,10 +3,12 @@ import postgres from "postgres";
 
 import { logger } from "@/common/logger";
 import {
+	accounts,
 	appointmentExdates,
 	appointmentOverrides,
 	appointments,
 	clients,
+	type NewAccount,
 	type NewAppointment,
 	type NewAppointmentExdate,
 	type NewAppointmentOverride,
@@ -34,6 +36,12 @@ const professionalIds = {
 const storeIds = {
 	matriz: "2cae7e15-e4b8-4c0e-8dce-c20f15327f22",
 	moema: "0088dca4-c157-4588-bd14-34e5dd6bd58e",
+} as const;
+
+const accountIds = {
+	joanaAccount: "41f79e3b-8d1a-4e67-b3c5-9a1f2e8d7c5a",
+	carlosAccount: "52e8a04c-9e2b-5f78-c4d6-0b2c3f9e8d6b",
+	marinaAccount: "63f9b15d-0f3c-6e89-d5e7-1c3e4f0f9e7c",
 } as const;
 
 const storesSeedData: NewStore[] = [
@@ -196,17 +204,47 @@ async function seedDatabase(): Promise<void> {
 	const db = drizzle(sql);
 
 	try {
+		// Hash passwords for accounts
+		const accountsWithHashedPasswords: NewAccount[] = await Promise.all([
+			{
+				id: accountIds.joanaAccount,
+				name: "Joana Silva",
+				taxId: "12345678900",
+				cellphone: "+55 (11) 98888-1111",
+				storeId: storeIds.matriz,
+				passwordHash: await Bun.password.hash("senha@123"),
+			},
+			{
+				id: accountIds.carlosAccount,
+				name: "Carlos Souza",
+				taxId: "98765432100",
+				cellphone: "+55 (11) 97777-2222",
+				storeId: storeIds.moema,
+				passwordHash: await Bun.password.hash("senha@456"),
+			},
+			{
+				id: accountIds.marinaAccount,
+				name: "Marina Lima",
+				taxId: "11223344567",
+				cellphone: "+55 (11) 96666-3333",
+				storeId: storeIds.matriz,
+				passwordHash: await Bun.password.hash("senha@789"),
+			},
+		]);
+
 		await db.transaction(async (tx) => {
 			await tx.delete(appointmentOverrides);
 			await tx.delete(appointmentExdates);
 			await tx.delete(appointments);
 			await tx.delete(professionals);
 			await tx.delete(clients);
+			await tx.delete(accounts);
 			await tx.delete(stores);
 
 			await tx.insert(stores).values(storesSeedData);
 			await tx.insert(clients).values(clientsSeedData);
 			await tx.insert(professionals).values(professionalsSeedData);
+			await tx.insert(accounts).values(accountsWithHashedPasswords);
 			await tx.insert(appointments).values(appointmentsSeedData);
 			await tx.insert(appointmentExdates).values(appointmentExdatesSeedData);
 			await tx
@@ -218,6 +256,7 @@ async function seedDatabase(): Promise<void> {
 			stores: storesSeedData.length,
 			clients: clientsSeedData.length,
 			professionals: professionalsSeedData.length,
+			accounts: accountsWithHashedPasswords.length,
 			appointments: appointmentsSeedData.length,
 			exdates: appointmentExdatesSeedData.length,
 			overrides: appointmentOverridesSeedData.length,

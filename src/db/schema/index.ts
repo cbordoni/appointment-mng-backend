@@ -130,3 +130,20 @@ export type AppointmentExdate = typeof appointmentExdates.$inferSelect;
 export type NewAppointmentExdate = typeof appointmentExdates.$inferInsert;
 export type AppointmentOverride = typeof appointmentOverrides.$inferSelect;
 export type NewAppointmentOverride = typeof appointmentOverrides.$inferInsert;
+
+export const accounts = pgTable("accounts", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(),
+	taxId: text("tax_id").unique(),
+	cellphone: text("cellphone").notNull(),
+	passwordHash: text("password_hash").notNull(),
+	storeId: uuid("store_id")
+		.notNull()
+		.references(() => stores.id, { onDelete: "cascade" }),
+	deletedAt: timestamp("deleted_at"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;

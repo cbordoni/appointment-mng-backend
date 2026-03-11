@@ -6,6 +6,7 @@ import prometheus from "elysia-prometheus";
 import { errorLoggerPlugin } from "@/common/http/error-logger.plugin";
 import { httpErrorMapperPlugin } from "@/common/http/http-error-mapper.plugin";
 import { requestLoggerPlugin } from "@/common/http/request-logger.plugin";
+import { accountRoutes } from "@/features/account/account.routes";
 import { appointmentRoutes } from "@/features/appointment/appointment.routes";
 import { appointmentExceptionRoutes } from "@/features/appointment-exception/appointment-exception.routes";
 import { appointmentOverrideRoutes } from "@/features/appointment-override/appointment-override.routes";
@@ -34,6 +35,7 @@ export const app = new Elysia()
 				},
 				tags: [
 					{ name: "Stores", description: "Store management endpoints" },
+					{ name: "Accounts", description: "Account management endpoints" },
 					{ name: "Clients", description: "Client management endpoints" },
 					{
 						name: "Professionals",
@@ -67,6 +69,7 @@ export const app = new Elysia()
 	})
 	.use(healthRoutes)
 	.use(storeRoutes)
+	.use(accountRoutes)
 	.use(clientRoutes)
 	.use(professionalRoutes)
 	.use(appointmentExceptionRoutes)
