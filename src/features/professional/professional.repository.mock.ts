@@ -18,9 +18,10 @@ export class MockProfessionalRepository
 		return "Professional";
 	}
 
-	async findAll(page: number, limit: number) {
+	async findAll(page: number, limit: number, storeId: string) {
 		const activeProfessionals = this.items.filter(
-			(professional) => !professional.deletedAt,
+			(professional) =>
+				professional.storeId === storeId && !professional.deletedAt,
 		);
 		const offset = (page - 1) * limit;
 		const data = activeProfessionals.slice(offset, offset + limit);
@@ -57,6 +58,7 @@ export class MockProfessionalRepository
 			name: data.name,
 			taxId: data.taxId,
 			cellphone: data.cellphone,
+			storeId: data.storeId,
 			deletedAt: null,
 			createdAt: new Date(),
 			updatedAt: new Date(),

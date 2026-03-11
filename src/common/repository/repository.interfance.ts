@@ -6,7 +6,7 @@ import type { PaginatedResult } from "../types";
 // biome-ignore format: to keep the method signatures clear and consistent
 export interface IRepository<T extends { id: unknown }, CreateInput, UpdateInput> {
 	// biome-ignore format: to keep the method signatures clear and consistent
-	findAll(page: number, limit: number): Promise<Result<PaginatedResult<T>, DatabaseError>>;
+	findAll(page: number, limit: number, storeId: string): Promise<Result<PaginatedResult<T>, DatabaseError>>;
 
 	findById(id: string): Promise<Result<T, NotFoundError | DatabaseError>>;
 

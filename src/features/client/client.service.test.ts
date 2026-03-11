@@ -43,7 +43,7 @@ describe("ClientService", () => {
 					name: "Jane Doe",
 					taxId: null,
 					cellphone: "0987654321",
-					storeId: validStoreId,
+					storeId: anotherValidStoreId,
 					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -52,16 +52,17 @@ describe("ClientService", () => {
 
 			mockRepository.setClients(mockClients);
 
-			const result = await clientService.getAllClients(1, 10);
+			const result = await clientService.getAllClients(1, 10, validStoreId);
 
 			expect(result.isOk()).toBe(true);
 
 			if (result.isOk()) {
 				const response = result.value;
-				expect(response.data).toHaveLength(2);
+				expect(response.data).toHaveLength(1);
+				expect(response.data[0]?.storeId).toBe(validStoreId);
 				expect(response.meta.page).toBe(1);
 				expect(response.meta.limit).toBe(10);
-				expect(response.meta.total).toBe(2);
+				expect(response.meta.total).toBe(1);
 				expect(response.meta.totalPages).toBe(1);
 			}
 		});
@@ -80,8 +81,16 @@ describe("ClientService", () => {
 
 			mockRepository.setClients(mockClients);
 
-			const resultPage1 = await clientService.getAllClients(1, 10);
-			const resultPage2 = await clientService.getAllClients(2, 10);
+			const resultPage1 = await clientService.getAllClients(
+				1,
+				10,
+				validStoreId,
+			);
+			const resultPage2 = await clientService.getAllClients(
+				2,
+				10,
+				validStoreId,
+			);
 
 			expect(resultPage1.isOk()).toBe(true);
 			expect(resultPage2.isOk()).toBe(true);
@@ -96,7 +105,7 @@ describe("ClientService", () => {
 		it("should return empty array when no clients exist", async () => {
 			mockRepository.clearClients();
 
-			const result = await clientService.getAllClients(1, 10);
+			const result = await clientService.getAllClients(1, 10, validStoreId);
 
 			expect(result.isOk()).toBe(true);
 

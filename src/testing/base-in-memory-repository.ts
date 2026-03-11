@@ -11,6 +11,7 @@ export abstract class BaseInMemoryRepository<T extends { id: string }> {
 	async findAll(
 		page: number,
 		limit: number,
+		_storeId: string,
 	): Promise<Result<PaginatedResult<T>, DatabaseError>> {
 		const offset = (page - 1) * limit;
 		const data = this.items.slice(offset, offset + limit);

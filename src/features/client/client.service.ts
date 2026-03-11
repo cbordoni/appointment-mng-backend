@@ -49,16 +49,18 @@ export class ClientService {
 	async getAllClients(
 		page = 1,
 		limit = 10,
+		storeId: string,
 	): Promise<Result<PaginatedResponse<Client>, DatabaseError>> {
-		logger.debug("Fetching all clients", { page, limit });
+		logger.debug("Fetching all clients", { page, limit, storeId });
 
-		const getResult = await this.repository.findAll(page, limit);
+		const getResult = await this.repository.findAll(page, limit, storeId);
 
 		return getResult.map((data) => {
 			logger.info("Clients fetched successfully", {
 				count: data.items.length,
 				total: data.total,
 				page,
+				storeId,
 			});
 
 			return toPaginated(data, page, limit);

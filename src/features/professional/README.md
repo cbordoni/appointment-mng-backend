@@ -1,6 +1,7 @@
 # Professional Feature
 
 Responsável pelo ciclo de vida de profissionais (CRUD) com paginação na listagem.
+Cada profissional pertence a uma store via `storeId`.
 
 ## Responsabilidades
 
@@ -18,6 +19,7 @@ Prefixo: `/professionals`
   - Query:
     - `page` (opcional, padrão: `1`)
     - `limit` (opcional, padrão: `10`)
+    - `storeId` (obrigatório, UUID)
   - Descrição: lista profissionais com paginação
 
 - `GET /professionals/:id`
@@ -32,7 +34,8 @@ Prefixo: `/professionals`
 {
   "name": "Nome",
   "taxId": "12345678901",
-  "cellphone": "11999999999"
+  "cellphone": "11999999999",
+  "storeId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 

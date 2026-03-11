@@ -13,7 +13,7 @@ import type {
 } from "./professional.types";
 
 export class ProfessionalRepository implements IProfessionalRepository {
-	async findAll(page: number, limit: number) {
+	async findAll(page: number, limit: number, storeId: string) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
 			const notDeleted = isNull(professionals.deletedAt);
@@ -22,10 +22,13 @@ export class ProfessionalRepository implements IProfessionalRepository {
 				db
 					.select()
 					.from(professionals)
-					.where(notDeleted)
+					.where(and(eq(professionals.storeId, storeId), notDeleted))
 					.limit(limit)
 					.offset(offset),
-				getTableCount(professionals, notDeleted),
+				getTableCount(
+					professionals,
+					and(eq(professionals.storeId, storeId), notDeleted),
+				),
 			]);
 
 			return { items, total };
@@ -77,6 +80,7 @@ export class ProfessionalRepository implements IProfessionalRepository {
 						name: data.name,
 						taxId: data.taxId,
 						cellphone: data.cellphone,
+						storeId: data.storeId,
 						deletedAt: null,
 					})
 					.returning(),

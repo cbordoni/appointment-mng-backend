@@ -15,8 +15,10 @@ export class MockClientRepository
 		return "Client";
 	}
 
-	async findAll(page: number, limit: number) {
-		const activeClients = this.items.filter((client) => !client.deletedAt);
+	async findAll(page: number, limit: number, storeId: string) {
+		const activeClients = this.items.filter(
+			(client) => client.storeId === storeId && !client.deletedAt,
+		);
 		const offset = (page - 1) * limit;
 		const data = activeClients.slice(offset, offset + limit);
 

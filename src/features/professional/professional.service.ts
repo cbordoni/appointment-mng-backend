@@ -10,6 +10,7 @@ import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
 import type { Professional } from "@/db/schema";
 
+import type { IStoreRepository } from "../store/store.repository.interface";
 import type { IProfessionalRepository } from "./professional.repository.interface";
 import type {
 	CreateProfessionalInput,
@@ -17,7 +18,10 @@ import type {
 } from "./professional.types";
 
 export class ProfessionalService {
-	constructor(private readonly repository: IProfessionalRepository) {}
+	constructor(
+		private readonly repository: IProfessionalRepository,
+		private readonly storeRepository: IStoreRepository,
+	) {}
 
 	private validateName(name: string): Result<void, ValidationError> {
 		return name.trim().length === 0
@@ -39,19 +43,35 @@ export class ProfessionalService {
 			: err(new ValidationError("Invalid tax id"));
 	}
 
+	private async validateStoreExists(
+		storeId: string,
+	): Promise<Result<void, ValidationError | DatabaseError>> {
+		const storeExistsResult = await this.storeRepository.exists(storeId);
+
+		return storeExistsResult.andThen((exists) => {
+			if (!exists) {
+				return err(new ValidationError("Store not found"));
+			}
+
+			return ok(undefined);
+		});
+	}
+
 	async getAllProfessionals(
 		page = 1,
 		limit = 10,
+		storeId: string,
 	): Promise<Result<PaginatedResponse<Professional>, DatabaseError>> {
-		logger.debug("Fetching all professionals", { page, limit });
+		logger.debug("Fetching all professionals", { page, limit, storeId });
 
-		const getResult = await this.repository.findAll(page, limit);
+		const getResult = await this.repository.findAll(page, limit, storeId);
 
 		return getResult.map((data) => {
 			logger.info("Professionals fetched successfully", {
 				count: data.items.length,
 				total: data.total,
 				page,
+				storeId,
 			});
 
 			return toPaginated(data, page, limit);
@@ -86,7 +106,19 @@ export class ProfessionalService {
 			logger.warn("Professional creation failed: invalid input", {
 				reason: validationResult.error.message,
 			});
+
 			return err(validationResult.error);
+		}
+
+		const storeValidationResult = await this.validateStoreExists(data.storeId);
+
+		if (storeValidationResult.isErr()) {
+			logger.warn("Professional creation failed: invalid store", {
+				storeId: data.storeId,
+				reason: storeValidationResult.error.message,
+			});
+
+			return err(storeValidationResult.error);
 		}
 
 		const createResult = await this.repository.create(data);

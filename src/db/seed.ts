@@ -83,18 +83,21 @@ const professionalsSeedData: NewProfessional[] = [
 		name: "Dra. Ana Costa",
 		taxId: "12345678901",
 		cellphone: "+55 (11) 95555-1111",
+		storeId: storeIds.matriz,
 	},
 	{
 		id: professionalIds.bruno,
 		name: "Dr. Bruno Ribeiro",
 		taxId: "10987654321",
 		cellphone: "+55 (11) 94444-2222",
+		storeId: storeIds.moema,
 	},
 	{
 		id: professionalIds.fernanda,
 		name: "Dra. Fernanda Alves",
 		taxId: "11223344556",
 		cellphone: "+55 (11) 93333-3333",
+		storeId: storeIds.matriz,
 	},
 ] as const;
 

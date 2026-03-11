@@ -1,6 +1,6 @@
 import { BaseController } from "@/common/http/base-controller";
-import type { PaginationQuery } from "@/common/types";
 
+import type { PaginationQuery } from "@/common/types";
 import type { ProfessionalService } from "./professional.service";
 import type {
 	CreateProfessionalInput,
@@ -13,9 +13,9 @@ export class ProfessionalController extends BaseController {
 	}
 
 	async getAll(query: PaginationQuery) {
-		const { page = 1, limit = 10 } = query;
+		const { page = 1, limit = 10, storeId } = query;
 
-		const result = await this.service.getAllProfessionals(page, limit);
+		const result = await this.service.getAllProfessionals(page, limit, storeId);
 
 		return result.match((data) => ({ data }), this.handleError);
 	}

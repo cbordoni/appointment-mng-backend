@@ -19,6 +19,7 @@ Prefixo: `/clients`
   - Query:
     - `page` (opcional, padrão: `1`)
     - `limit` (opcional, padrão: `10`)
+    - `storeId` (obrigatório, UUID)
   - Descrição: lista clientes com paginação
 
 - `GET /clients/:id`

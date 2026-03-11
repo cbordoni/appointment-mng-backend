@@ -4,6 +4,7 @@ export const CreateProfessionalSchema = t.Object({
 	name: t.String({ minLength: 1 }),
 	taxId: t.String({ minLength: 11, maxLength: 18 }),
 	cellphone: t.String({ minLength: 10, maxLength: 15 }),
+	storeId: t.String({ format: "uuid" }),
 });
 
 export const UpdateProfessionalSchema = t.Object({

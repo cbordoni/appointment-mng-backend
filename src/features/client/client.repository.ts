@@ -10,14 +10,19 @@ import type { IClientRepository } from "./client.repository.interface";
 import type { CreateClientInput, UpdateClientInput } from "./client.types";
 
 export class ClientRepository implements IClientRepository {
-	async findAll(page: number, limit: number) {
+	async findAll(page: number, limit: number, storeId: string) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
 			const notDeleted = isNull(clients.deletedAt);
 
 			const [items, total] = await Promise.all([
-				db.select().from(clients).where(notDeleted).limit(limit).offset(offset),
-				getTableCount(clients, notDeleted),
+				db
+					.select()
+					.from(clients)
+					.where(and(eq(clients.storeId, storeId), notDeleted))
+					.limit(limit)
+					.offset(offset),
+				getTableCount(clients, and(eq(clients.storeId, storeId), notDeleted)),
 			]);
 
 			return { items, total };
