@@ -78,13 +78,21 @@ export class AppointmentService {
 		return ok(undefined);
 	}
 
-	async getAllAppointments(query: DateRangeQuery = {}) {
+	async getAllAppointments(query: DateRangeQuery) {
 		const from = query.from ? new Date(query.from) : undefined;
 		const to = query.to ? new Date(query.to) : undefined;
 
-		logger.debug("Fetching appointments by date range", { from, to });
+		logger.debug("Fetching appointments by date range", {
+			storeId: query.storeId,
+			from,
+			to,
+		});
 
-		const result = await this.repository.findByDateRange(from, to);
+		const result = await this.repository.findByDateRange(
+			query.storeId,
+			from,
+			to,
+		);
 
 		return result.map((items) => {
 			logger.info("Appointments fetched successfully", { count: items.length });
@@ -92,14 +100,30 @@ export class AppointmentService {
 		});
 	}
 
-	async getAppointmentsByClientId(clientId: string, page = 1, limit = 10) {
-		logger.debug("Fetching appointments by client", { clientId, page, limit });
+	async getAppointmentsByClientId(
+		clientId: string,
+		storeId: string,
+		page = 1,
+		limit = 10,
+	) {
+		logger.debug("Fetching appointments by client", {
+			clientId,
+			page,
+			limit,
+			storeId,
+		});
 
-		const result = await this.repository.findByClientId(clientId, page, limit);
+		const result = await this.repository.findByClientId(
+			clientId,
+			page,
+			limit,
+			storeId,
+		);
 
 		return result.map((data) => {
 			logger.info("Client appointments fetched successfully", {
 				clientId,
+				storeId,
 				count: data.items.length,
 				total: data.total,
 			});
@@ -110,6 +134,7 @@ export class AppointmentService {
 
 	async getAppointmentsByProfessionalId(
 		professionalId: string,
+		storeId: string,
 		page = 1,
 		limit = 10,
 	) {
@@ -117,17 +142,20 @@ export class AppointmentService {
 			professionalId,
 			page,
 			limit,
+			storeId,
 		});
 
 		const result = await this.repository.findByProfessionalId(
 			professionalId,
 			page,
 			limit,
+			storeId,
 		);
 
 		return result.map((data) => {
 			logger.info("Professional appointments fetched successfully", {
 				professionalId,
+				storeId,
 				count: data.items.length,
 				total: data.total,
 			});

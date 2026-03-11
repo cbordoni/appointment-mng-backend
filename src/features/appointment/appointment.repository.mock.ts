@@ -17,22 +17,10 @@ export class MockAppointmentRepository
 	extends BaseInMemoryRepository<Appointment>
 	implements IAppointmentRepository
 {
-	async findByProfessionalId(
-		professionalId: string,
-		page: number,
-		limit: number,
-	): AsyncDomainResult<PaginatedResult<Appointment>> {
-		const filtered = this.items.filter((a) => {
-			return a.professionalId === professionalId && !a.deletedAt;
-		});
-
-		const offset = (page - 1) * limit;
-		const items = filtered.slice(offset, offset + limit);
-
-		return ok({ items, total: filtered.length });
-	}
 	private clientsMap = new Map<string, string>();
+	private clientStoreMap = new Map<string, string>();
 	private professionalsMap = new Map<string, string>();
+	private professionalStoreMap = new Map<string, string>();
 
 	protected get entityName(): string {
 		return "Appointment";
@@ -42,12 +30,31 @@ export class MockAppointmentRepository
 		this.clientsMap = map;
 	}
 
+	setClientStoreMap(map: Map<string, string>) {
+		this.clientStoreMap = map;
+	}
+
 	setProfessionalsMap(map: Map<string, string>) {
 		this.professionalsMap = map;
 	}
 
-	async findAll(page: number, limit: number) {
-		const filtered = this.items.filter((appointment) => !appointment.deletedAt);
+	setProfessionalStoreMap(map: Map<string, string>) {
+		this.professionalStoreMap = map;
+	}
+
+	private belongsToStore(appointment: Appointment, storeId: string) {
+		return (
+			this.clientStoreMap.get(appointment.clientId) === storeId &&
+			this.professionalStoreMap.get(appointment.professionalId) === storeId
+		);
+	}
+
+	async findAll(page: number, limit: number, storeId: string) {
+		const filtered = this.items.filter((appointment) => {
+			return (
+				!appointment.deletedAt && this.belongsToStore(appointment, storeId)
+			);
+		});
 		const offset = (page - 1) * limit;
 		const items = filtered.slice(offset, offset + limit);
 
@@ -55,15 +62,26 @@ export class MockAppointmentRepository
 	}
 
 	async findByDateRange(
+		storeId: string,
 		from?: Date,
 		to?: Date,
 	): Promise<Result<AppointmentWithClient[], never>> {
-		const filtered = this.items.filter((a) => {
-			if (a.deletedAt) return false;
+		const filtered = this.items.filter((appointment) => {
+			if (appointment.deletedAt) {
+				return false;
+			}
 
-			if (from && a.dtStart < from) return false;
+			if (!this.belongsToStore(appointment, storeId)) {
+				return false;
+			}
 
-			if (to && a.dtStart > to) return false;
+			if (from && appointment.dtStart < from) {
+				return false;
+			}
+
+			if (to && appointment.dtStart > to) {
+				return false;
+			}
 
 			return true;
 		});
@@ -78,10 +96,39 @@ export class MockAppointmentRepository
 		return ok(result);
 	}
 
-	async findByClientId(clientId: string, page: number, limit: number) {
-		const filtered = this.items.filter((a) => {
-			return a.clientId === clientId && !a.deletedAt;
+	async findByClientId(
+		clientId: string,
+		page: number,
+		limit: number,
+		storeId: string,
+	) {
+		const filtered = this.items.filter((appointment) => {
+			return (
+				appointment.clientId === clientId &&
+				!appointment.deletedAt &&
+				this.belongsToStore(appointment, storeId)
+			);
 		});
+		const offset = (page - 1) * limit;
+		const items = filtered.slice(offset, offset + limit);
+
+		return ok({ items, total: filtered.length });
+	}
+
+	async findByProfessionalId(
+		professionalId: string,
+		page: number,
+		limit: number,
+		storeId: string,
+	): AsyncDomainResult<PaginatedResult<Appointment>> {
+		const filtered = this.items.filter((appointment) => {
+			return (
+				appointment.professionalId === professionalId &&
+				!appointment.deletedAt &&
+				this.belongsToStore(appointment, storeId)
+			);
+		});
+
 		const offset = (page - 1) * limit;
 		const items = filtered.slice(offset, offset + limit);
 

@@ -19,6 +19,7 @@ export type AppointmentWithClient = Appointment & {
 export const DateRangeQuerySchema = t.Object({
 	from: t.Optional(t.String({ format: "date-time" })),
 	to: t.Optional(t.String({ format: "date-time" })),
+	storeId: t.String({ format: "uuid" }),
 });
 
 export type DateRangeQuery = typeof DateRangeQuerySchema.static;

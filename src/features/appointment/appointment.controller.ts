@@ -20,10 +20,11 @@ export class AppointmentController extends BaseController {
 	}
 
 	async getAllByClientId(clientId: string, query: PaginationQuery) {
-		const { page = 1, limit = 10 } = query;
+		const { page = 1, limit = 10, storeId } = query;
 
 		const result = await this.service.getAppointmentsByClientId(
 			clientId,
+			storeId,
 			page,
 			limit,
 		);
@@ -32,10 +33,11 @@ export class AppointmentController extends BaseController {
 	}
 
 	async getAllByProfessionalId(professionalId: string, query: PaginationQuery) {
-		const { page = 1, limit = 10 } = query;
+		const { page = 1, limit = 10, storeId } = query;
 
 		const result = await this.service.getAppointmentsByProfessionalId(
 			professionalId,
+			storeId,
 			page,
 			limit,
 		);

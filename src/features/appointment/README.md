@@ -15,17 +15,28 @@ Prefixo: `/appointments`
 
 - `GET /appointments`
   - Query:
+    - `storeId` (obrigatório, UUID)
     - `from` (opcional, `date-time`)
     - `to` (opcional, `date-time`)
-  - Descrição: lista agendamentos por intervalo de datas
+  - Descrição: lista agendamentos por intervalo de datas, escopados por loja
 
 - `GET /appointments/client/:clientId`
   - Params:
     - `clientId` (UUID)
   - Query:
+    - `storeId` (obrigatório, UUID)
     - `page` (opcional, padrão: `1`)
     - `limit` (opcional, padrão: `10`)
-  - Descrição: lista agendamentos de um cliente com paginação
+  - Descrição: lista agendamentos de um cliente com paginação escopada por loja
+
+- `GET /appointments/professional/:professionalId`
+  - Params:
+    - `professionalId` (UUID)
+  - Query:
+    - `storeId` (obrigatório, UUID)
+    - `page` (opcional, padrão: `1`)
+    - `limit` (opcional, padrão: `10`)
+  - Descrição: lista agendamentos de um profissional com paginação escopada por loja
 
 - `GET /appointments/:id`
   - Params:

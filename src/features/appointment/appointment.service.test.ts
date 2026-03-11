@@ -10,6 +10,10 @@ import type { CreateAppointmentInput } from "./appointment.types";
 
 const BASE_CLIENT_ID = "00000000-0000-0000-0000-000000000001";
 const BASE_PROFESSIONAL_ID = "00000000-0000-0000-0000-000000000010";
+const BASE_STORE_ID = "00000000-0000-0000-0000-000000000100";
+const OTHER_CLIENT_ID = "00000000-0000-0000-0000-000000000002";
+const OTHER_PROFESSIONAL_ID = "00000000-0000-0000-0000-000000000020";
+const OTHER_STORE_ID = "00000000-0000-0000-0000-000000000200";
 
 class MockAppointmentNotificationScheduler implements IScheduler {
 	public scheduledAppointmentIds: string[] = [];
@@ -55,9 +59,29 @@ describe("AppointmentService", () => {
 		repository = new MockAppointmentRepository();
 		notificationScheduler = new MockAppointmentNotificationScheduler();
 		service = new AppointmentService(repository, notificationScheduler);
-		repository.setClientsMap(new Map([[BASE_CLIENT_ID, "John Doe"]]));
+		repository.setClientsMap(
+			new Map([
+				[BASE_CLIENT_ID, "John Doe"],
+				[OTHER_CLIENT_ID, "Jane Doe"],
+			]),
+		);
+		repository.setClientStoreMap(
+			new Map([
+				[BASE_CLIENT_ID, BASE_STORE_ID],
+				[OTHER_CLIENT_ID, OTHER_STORE_ID],
+			]),
+		);
 		repository.setProfessionalsMap(
-			new Map([[BASE_PROFESSIONAL_ID, "Dr. Alice Smith"]]),
+			new Map([
+				[BASE_PROFESSIONAL_ID, "Dr. Alice Smith"],
+				[OTHER_PROFESSIONAL_ID, "Dr. Bob Stone"],
+			]),
+		);
+		repository.setProfessionalStoreMap(
+			new Map([
+				[BASE_PROFESSIONAL_ID, BASE_STORE_ID],
+				[OTHER_PROFESSIONAL_ID, OTHER_STORE_ID],
+			]),
 		);
 	});
 
@@ -66,7 +90,9 @@ describe("AppointmentService", () => {
 			await repository.create(makeAppointment());
 			await repository.create(makeAppointment({ summary: "Second Session" }));
 
-			const result = await service.getAllAppointments();
+			const result = await service.getAllAppointments({
+				storeId: BASE_STORE_ID,
+			});
 
 			expect(result.isOk()).toBe(true);
 
@@ -74,6 +100,28 @@ describe("AppointmentService", () => {
 				expect(result.value).toHaveLength(2);
 				expect(result.value[0].clientName).toBe("John Doe");
 				expect(result.value[0].professionalName).toBe("Dr. Alice Smith");
+			}
+		});
+
+		it("should return only appointments from requested store", async () => {
+			await repository.create(makeAppointment());
+			await repository.create(
+				makeAppointment({
+					summary: "Other Store Session",
+					clientId: OTHER_CLIENT_ID,
+					professionalId: OTHER_PROFESSIONAL_ID,
+				}),
+			);
+
+			const result = await service.getAllAppointments({
+				storeId: BASE_STORE_ID,
+			});
+
+			expect(result.isOk()).toBe(true);
+
+			if (result.isOk()) {
+				expect(result.value).toHaveLength(1);
+				expect(result.value[0]?.summary).toBe("Therapy Session");
 			}
 		});
 	});

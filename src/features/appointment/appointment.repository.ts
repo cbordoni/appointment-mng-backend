@@ -2,7 +2,7 @@ import { and, eq, gt, gte, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
-import { getTableCount, wrapDatabaseOperation } from "@/common/utils/database";
+import { wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
 import { appointments, clients, professionals } from "@/db/schema";
 
@@ -13,31 +13,47 @@ import type {
 } from "./appointment.types";
 
 export class AppointmentRepository implements IAppointmentRepository {
-	async findAll(page: number, limit: number) {
+	async findAll(page: number, limit: number, storeId: string) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
-			const notDeleted = isNull(appointments.deletedAt);
+			const conditions = and(
+				isNull(appointments.deletedAt),
+				isNull(clients.deletedAt),
+				eq(clients.storeId, storeId),
+			);
 
-			const [items, total] = await Promise.all([
+			const [items, totalResult] = await Promise.all([
 				db
-					.select()
+					.select({ appointment: appointments })
 					.from(appointments)
-					.where(notDeleted)
+					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.where(conditions)
 					.limit(limit)
 					.offset(offset),
-				getTableCount(appointments, notDeleted),
+				db
+					.select({ count: sql<number>`count(*)` })
+					.from(appointments)
+					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.where(conditions),
 			]);
 
-			return { items, total };
+			const total = Number(totalResult[0]?.count ?? 0);
+
+			return {
+				items: items.map(({ appointment }) => appointment),
+				total,
+			};
 		}, "Failed to fetch appointments");
 	}
 
-	async findByDateRange(from?: Date, to?: Date) {
+	async findByDateRange(storeId: string, from?: Date, to?: Date) {
 		return wrapDatabaseOperation(() => {
 			const conditions = [
 				isNull(appointments.deletedAt),
 				isNull(clients.deletedAt),
 				isNull(professionals.deletedAt),
+				eq(clients.storeId, storeId),
+				eq(professionals.storeId, storeId),
 				from ? gte(appointments.dtStart, from) : undefined,
 				to ? lte(appointments.dtStart, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;
@@ -99,25 +115,42 @@ export class AppointmentRepository implements IAppointmentRepository {
 		return ok(appointment);
 	}
 
-	async findByClientId(clientId: string, page: number, limit: number) {
+	async findByClientId(
+		clientId: string,
+		page: number,
+		limit: number,
+		storeId: string,
+	) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
 			const conditions = and(
 				eq(appointments.clientId, clientId),
 				isNull(appointments.deletedAt),
+				isNull(clients.deletedAt),
+				eq(clients.storeId, storeId),
 			);
 
-			const [items, total] = await Promise.all([
+			const [items, totalResult] = await Promise.all([
 				db
-					.select()
+					.select({ appointment: appointments })
 					.from(appointments)
+					.innerJoin(clients, eq(appointments.clientId, clients.id))
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
-				getTableCount(appointments, conditions),
+				db
+					.select({ count: sql<number>`count(*)` })
+					.from(appointments)
+					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.where(conditions),
 			]);
 
-			return { items, total };
+			const total = Number(totalResult[0]?.count ?? 0);
+
+			return {
+				items: items.map(({ appointment }) => appointment),
+				total,
+			};
 		}, "Failed to fetch appointments by client");
 	}
 
@@ -125,6 +158,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 		professionalId: string,
 		page: number,
 		limit: number,
+		storeId: string,
 	) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
@@ -132,19 +166,37 @@ export class AppointmentRepository implements IAppointmentRepository {
 			const conditions = and(
 				eq(appointments.professionalId, professionalId),
 				isNull(appointments.deletedAt),
+				isNull(professionals.deletedAt),
+				eq(professionals.storeId, storeId),
 			);
 
-			const [items, total] = await Promise.all([
+			const [items, totalResult] = await Promise.all([
 				db
-					.select()
+					.select({ appointment: appointments })
 					.from(appointments)
+					.innerJoin(
+						professionals,
+						eq(appointments.professionalId, professionals.id),
+					)
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
-				getTableCount(appointments, conditions),
+				db
+					.select({ count: sql<number>`count(*)` })
+					.from(appointments)
+					.innerJoin(
+						professionals,
+						eq(appointments.professionalId, professionals.id),
+					)
+					.where(conditions),
 			]);
 
-			return { items, total };
+			const total = Number(totalResult[0]?.count ?? 0);
+
+			return {
+				items: items.map(({ appointment }) => appointment),
+				total,
+			};
 		}, "Failed to fetch appointments by professional");
 	}
 
