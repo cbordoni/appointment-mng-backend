@@ -9,8 +9,8 @@ export interface JWTPayload {
 }
 
 export class JWTService {
-	private readonly secret =
-		Bun.env.JWT_SECRET || "dev-secret-key-change-in-production";
+	private readonly secret = Bun.env.JWT_SECRET;
+
 	private readonly expiresIn = 60 * 60 * 24 * 7; // 7 days
 
 	// Constructor left empty as secret has a default
@@ -52,6 +52,7 @@ export class JWTService {
 			const payload = JSON.parse(payloadStr) as JWTPayload;
 
 			const now = Math.floor(Date.now() / 1000);
+
 			if (payload.exp < now) {
 				logger.warn("JWT token expired");
 				return null;

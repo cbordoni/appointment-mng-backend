@@ -53,11 +53,13 @@ export class AuthService {
 		logger.debug("Attempting login with taxId", { taxId: input.taxId });
 
 		const taxIdValidation = this.validateTaxId(input.taxId);
+
 		if (taxIdValidation.isErr()) {
 			return err(taxIdValidation.error);
 		}
 
 		const passwordValidation = this.validatePassword(input.password);
+
 		if (passwordValidation.isErr()) {
 			return err(passwordValidation.error);
 		}

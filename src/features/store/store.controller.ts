@@ -1,5 +1,5 @@
 import { BaseController } from "@/common/http/base-controller";
-import type { PaginationQuery } from "@/common/types";
+import type { SimplePaginationQuery } from "@/common/types";
 
 import type { StoreService } from "./store.service";
 import type { CreateStoreInput, UpdateStoreInput } from "./store.types";
@@ -9,7 +9,7 @@ export class StoreController extends BaseController {
 		super();
 	}
 
-	async getAll(query: Omit<PaginationQuery, "storeId">) {
+	async getAll(query: SimplePaginationQuery) {
 		const { page = 1, limit = 10 } = query;
 
 		const result = await this.service.getAllStores(page, limit);

@@ -6,7 +6,13 @@ export const PaginationQuerySchema = t.Object({
 	storeId: t.String({ format: "uuid" }),
 });
 
+export const SimplePaginationQuerySchema = t.Object({
+	page: t.Optional(t.Numeric({ minimum: 1, default: 1 })),
+	limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100, default: 10 })),
+});
+
 export type PaginationQuery = typeof PaginationQuerySchema.static;
+export type SimplePaginationQuery = typeof SimplePaginationQuerySchema.static;
 
 export interface PaginatedResponse<T> {
 	data: T[];
