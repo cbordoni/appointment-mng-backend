@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { ok } from "neverthrow";
+import { rrulestr } from "rrule";
 
 import { ValidationError } from "@/common/errors";
 import type { Appointment } from "@/db/schema";
@@ -51,6 +52,27 @@ const makeAppointment = (
 	professionalName: "Dr. Silva",
 	...overrides,
 });
+
+const getRecurringStarts = (
+	appointment: Appointment,
+	fromIso: string,
+	toIso: string,
+) => {
+	if (!appointment.rrule) {
+		return [appointment.dtStart];
+	}
+
+	const dtStart = appointment.dtStart
+		.toISOString()
+		.replace(/[-:]/g, "")
+		.replace(".000", "");
+
+	const parsedRule = rrulestr(
+		`DTSTART:${dtStart}\nRRULE:${appointment.rrule}`,
+	);
+
+	return parsedRule.between(new Date(fromIso), new Date(toIso), true);
+};
 
 describe("AppointmentProjectionService", () => {
 	let repository: MockAppointmentProjectionRepository;
@@ -107,15 +129,23 @@ describe("AppointmentProjectionService", () => {
 		});
 
 		it("should apply exdate and override for recurring appointments", async () => {
+			const appointment = makeAppointment({
+				rrule: "FREQ=DAILY;COUNT=3",
+			});
+
+			const recurrenceStarts = getRecurringStarts(
+				appointment,
+				"2026-03-10T00:00:00.000Z",
+				"2026-03-13T00:00:00.000Z",
+			);
+
 			repository.setRows([
 				{
-					appointment: makeAppointment({
-						rrule: "FREQ=DAILY;COUNT=3",
-					}),
-					exdates: [new Date("2026-03-11T10:00:00.000Z")],
+					appointment,
+					exdates: [recurrenceStarts[1]],
 					overrides: [
 						{
-							recurrenceId: new Date("2026-03-12T10:00:00.000Z"),
+							recurrenceId: recurrenceStarts[2],
 							summary: "Consulta ajustada",
 							description: "Mudança de horário",
 							dtStart: new Date("2026-03-12T12:00:00.000Z"),
@@ -154,15 +184,23 @@ describe("AppointmentProjectionService", () => {
 		});
 
 		it("should skip recurring occurrence when override is cancelled", async () => {
+			const appointment = makeAppointment({
+				rrule: "FREQ=DAILY;COUNT=2",
+			});
+
+			const recurrenceStarts = getRecurringStarts(
+				appointment,
+				"2026-03-10T00:00:00.000Z",
+				"2026-03-12T00:00:00.000Z",
+			);
+
 			repository.setRows([
 				{
-					appointment: makeAppointment({
-						rrule: "FREQ=DAILY;COUNT=2",
-					}),
+					appointment,
 					exdates: [],
 					overrides: [
 						{
-							recurrenceId: new Date("2026-03-11T10:00:00.000Z"),
+							recurrenceId: recurrenceStarts[1],
 							summary: null,
 							description: null,
 							dtStart: null,

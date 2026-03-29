@@ -1,5 +1,5 @@
 {
-  "id": "483ced0f-aca3-44a8-bb71-b82905c99838",
+  "id": "b9ab0e70-85df-41ea-8eea-7667f52b7376",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -455,15 +455,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "clients_tax_id_unique": {
-          "name": "clients_tax_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tax_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -541,15 +533,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "professionals_tax_id_unique": {
-          "name": "professionals_tax_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tax_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

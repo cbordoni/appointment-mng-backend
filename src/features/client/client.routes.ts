@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 
-import { PaginationQuerySchema } from "@/common/types";
+import { PaginationQuerySchema, StoreHeaderSchema } from "@/common/types";
 import { controller } from ".";
 import {
 	ClientIdSchema,
@@ -11,11 +11,12 @@ import {
 export const clientRoutes = new Elysia({ prefix: "/clients" })
 	.get(
 		"/",
-		async ({ query }) => {
-			return await controller.getAll(query);
+		async ({ query, headers }) => {
+			return await controller.getAll(query, headers["x-store-id"]);
 		},
 		{
 			query: PaginationQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get all clients with pagination",
 				tags: ["Clients"],

@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 
-import { PaginationQuerySchema } from "@/common/types";
+import { PaginationQuerySchema, StoreHeaderSchema } from "@/common/types";
 import { controller } from ".";
 import {
 	AppointmentIdSchema,
@@ -25,12 +25,17 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 	)
 	.get(
 		"/client/:clientId",
-		async ({ params, query }) => {
-			return await controller.getAllByClientId(params.clientId, query);
+		async ({ params, query, headers }) => {
+			return await controller.getAllByClientId(
+				params.clientId,
+				query,
+				headers["x-store-id"],
+			);
 		},
 		{
 			params: t.Object({ clientId: t.String({ format: "uuid" }) }),
 			query: PaginationQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get appointments by client ID",
 				tags: ["Appointments"],
@@ -39,15 +44,17 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 	)
 	.get(
 		"/professional/:professionalId",
-		async ({ params, query }) => {
+		async ({ params, query, headers }) => {
 			return await controller.getAllByProfessionalId(
 				params.professionalId,
 				query,
+				headers["x-store-id"],
 			);
 		},
 		{
 			params: t.Object({ professionalId: t.String({ format: "uuid" }) }),
 			query: PaginationQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get appointments by professional ID",
 				tags: ["Appointments"],

@@ -24,7 +24,7 @@ export type NewStore = typeof stores.$inferInsert;
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
-	taxId: text("tax_id").unique(),
+	taxId: text("tax_id"),
 	cellphone: text("cellphone").notNull(),
 	storeId: uuid("store_id")
 		.notNull()
@@ -40,7 +40,7 @@ export type NewClient = typeof clients.$inferInsert;
 export const professionals = pgTable("professionals", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
-	taxId: text("tax_id").notNull().unique(),
+	taxId: text("tax_id").notNull(),
 	cellphone: text("cellphone").notNull(),
 	storeId: uuid("store_id")
 		.notNull()

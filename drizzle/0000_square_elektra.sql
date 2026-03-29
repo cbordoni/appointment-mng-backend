@@ -50,8 +50,7 @@ CREATE TABLE "clients" (
 	"store_id" uuid NOT NULL,
 	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "clients_tax_id_unique" UNIQUE("tax_id")
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "professionals" (
@@ -62,8 +61,7 @@ CREATE TABLE "professionals" (
 	"store_id" uuid NOT NULL,
 	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "professionals_tax_id_unique" UNIQUE("tax_id")
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "stores" (

@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 
-import { PaginationQuerySchema } from "@/common/types";
+import { PaginationQuerySchema, StoreHeaderSchema } from "@/common/types";
 import { controller } from ".";
 import {
 	CreateProfessionalSchema,
@@ -11,11 +11,12 @@ import {
 export const professionalRoutes = new Elysia({ prefix: "/professionals" })
 	.get(
 		"/",
-		async ({ query }) => {
-			return await controller.getAll(query);
+		async ({ query, headers }) => {
+			return await controller.getAll(query, headers["x-store-id"]);
 		},
 		{
 			query: PaginationQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get all professionals with pagination",
 				tags: ["Professionals"],
