@@ -1,10 +1,10 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
-import { getTableCount, wrapDatabaseOperation } from "@/common/utils/database";
+import { wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
-import { professionals } from "@/db/schema";
+import { accounts, professionals } from "@/db/schema";
 
 import type { IProfessionalRepository } from "./professional.repository.interface";
 import type {
@@ -16,19 +16,29 @@ export class ProfessionalRepository implements IProfessionalRepository {
 	async findAll(page: number, limit: number, storeId: string) {
 		return wrapDatabaseOperation(async () => {
 			const offset = (page - 1) * limit;
-			const notDeleted = isNull(professionals.deletedAt);
+			const notDeleted = and(
+				isNull(professionals.deletedAt),
+				isNull(accounts.deletedAt),
+				eq(accounts.storeId, storeId),
+			);
 
 			const [items, total] = await Promise.all([
 				db
 					.select()
 					.from(professionals)
-					.where(and(eq(professionals.storeId, storeId), notDeleted))
+					.innerJoin(accounts, eq(professionals.accountId, accounts.id))
+					.where(notDeleted)
 					.limit(limit)
-					.offset(offset),
-				getTableCount(
-					professionals,
-					and(eq(professionals.storeId, storeId), notDeleted),
-				),
+					.offset(offset)
+					.then((rows) =>
+						rows.map(({ professionals: professional }) => professional),
+					),
+				db
+					.select({ count: sql<number>`count(*)` })
+					.from(professionals)
+					.innerJoin(accounts, eq(professionals.accountId, accounts.id))
+					.where(notDeleted)
+					.then((rows) => Number(rows[0]?.count ?? 0)),
 			]);
 
 			return { items, total };
@@ -77,10 +87,7 @@ export class ProfessionalRepository implements IProfessionalRepository {
 				db
 					.insert(professionals)
 					.values({
-						name: data.name,
-						taxId: data.taxId,
-						cellphone: data.cellphone,
-						storeId: data.storeId,
+						accountId: data.accountId,
 						deletedAt: null,
 					})
 					.returning(),

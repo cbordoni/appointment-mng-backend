@@ -45,14 +45,18 @@ export class AppointmentProjectionService {
 		to: Date,
 	): AppointmentProjectionItem[] {
 		const appointment = row.appointment;
-		const exdateSet = new Set(row.exdates.map((exdate) => exdate.getTime()));
+		const toRecurrenceKey = (date: Date) => date.toISOString();
+
+		const exdateSet = new Set(
+			row.exdates.map((exdate) => toRecurrenceKey(exdate)),
+		);
 
 		const duration =
 			appointment.dtEnd.getTime() - appointment.dtStart.getTime();
 
 		const overrideByRecurrence = new Map(
 			row.overrides.map((override) => [
-				override.recurrenceId.getTime(),
+				toRecurrenceKey(override.recurrenceId),
 				override,
 			]),
 		);
@@ -75,7 +79,7 @@ export class AppointmentProjectionService {
 		const projected: AppointmentProjectionItem[] = [];
 
 		for (const baseStart of baseStarts) {
-			const recurrenceKey = baseStart.getTime();
+			const recurrenceKey = toRecurrenceKey(baseStart);
 			const override = overrideByRecurrence.get(recurrenceKey);
 
 			if (override) {

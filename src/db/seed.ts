@@ -1,4 +1,3 @@
-import { sql as drizzleSql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -43,6 +42,9 @@ const accountIds = {
 	joanaAccount: "41f79e3b-8d1a-4e67-b3c5-9a1f2e8d7c5a",
 	carlosAccount: "52e8a04c-9e2b-5f78-c4d6-0b2c3f9e8d6b",
 	marinaAccount: "63f9b15d-0f3c-6e89-d5e7-1c3e4f0f9e7c",
+	anaAccount: "74a0c26e-1a4d-7f90-e6f8-2d4f5010a8d1",
+	brunoAccount: "85b1d37f-2b5e-8091-f709-3e506121b9e2",
+	fernandaAccount: "96c2e480-3c6f-91a2-081a-4f617232cad3",
 } as const;
 
 const storesSeedData: NewStore[] = [
@@ -80,24 +82,15 @@ const clientsSeedData: NewClient[] = [
 const professionalsSeedData: NewProfessional[] = [
 	{
 		id: professionalIds.ana,
-		name: "Dra. Ana Costa",
-		taxId: "12345678901",
-		cellphone: "+55 (11) 95555-1111",
-		storeId: storeIds.matriz,
+		accountId: accountIds.anaAccount,
 	},
 	{
 		id: professionalIds.bruno,
-		name: "Dr. Bruno Ribeiro",
-		taxId: "10987654321",
-		cellphone: "+55 (11) 94444-2222",
-		storeId: storeIds.moema,
+		accountId: accountIds.brunoAccount,
 	},
 	{
 		id: professionalIds.fernanda,
-		name: "Dra. Fernanda Alves",
-		taxId: "11223344556",
-		cellphone: "+55 (11) 93333-3333",
-		storeId: storeIds.matriz,
+		accountId: accountIds.fernandaAccount,
 	},
 ] as const;
 
@@ -113,7 +106,7 @@ const appointmentsSeedData: NewAppointment[] = [
 		status: "CONFIRMED",
 		sequence: 0,
 		dtstamp: new Date(),
-		clientId: clientIds.carlos,
+		clientId: clientIds.marina,
 		professionalId: professionalIds.ana,
 	},
 	{
@@ -195,16 +188,6 @@ async function seedDatabase(): Promise<void> {
 	const sql = postgres(connectionString);
 	const db = drizzle(sql);
 
-	const clientColumns = await sql<{ column_name: string }[]>`
-		select column_name
-		from information_schema.columns
-		where table_name = 'clients'
-	`;
-
-	const hasAccountIdColumn = clientColumns.some(
-		(column) => column.column_name === "account_id",
-	);
-
 	try {
 		// Hash passwords for accounts
 		const accountsWithHashedPasswords: NewAccount[] = await Promise.all([
@@ -232,11 +215,31 @@ async function seedDatabase(): Promise<void> {
 				storeId: storeIds.matriz,
 				passwordHash: await Bun.password.hash("senha@789"),
 			},
+			{
+				id: accountIds.anaAccount,
+				name: "Dra. Ana Costa",
+				taxId: "12345678901",
+				cellphone: "+55 (11) 95555-1111",
+				storeId: storeIds.matriz,
+				passwordHash: await Bun.password.hash("senha@101"),
+			},
+			{
+				id: accountIds.brunoAccount,
+				name: "Dr. Bruno Ribeiro",
+				taxId: "10987654321",
+				cellphone: "+55 (11) 94444-2222",
+				storeId: storeIds.moema,
+				passwordHash: await Bun.password.hash("senha@202"),
+			},
+			{
+				id: accountIds.fernandaAccount,
+				name: "Dra. Fernanda Alves",
+				taxId: "11223344556",
+				cellphone: "+55 (11) 93333-3333",
+				storeId: storeIds.matriz,
+				passwordHash: await Bun.password.hash("senha@303"),
+			},
 		]);
-
-		const accountById = new Map(
-			accountsWithHashedPasswords.map((account) => [account.id, account]),
-		);
 
 		await db.transaction(async (tx) => {
 			await tx.delete(appointmentOverrides);
@@ -250,31 +253,7 @@ async function seedDatabase(): Promise<void> {
 			await tx.insert(stores).values(storesSeedData);
 			await tx.insert(accounts).values(accountsWithHashedPasswords);
 			await tx.insert(professionals).values(professionalsSeedData);
-
-			if (hasAccountIdColumn) {
-				await tx.insert(clients).values(clientsSeedData);
-			} else {
-				for (const client of clientsSeedData) {
-					const account = accountById.get(client.accountId);
-
-					if (
-						!account ||
-						!account.id ||
-						!account.name ||
-						!account.cellphone ||
-						!account.storeId
-					) {
-						continue;
-					}
-
-					await tx.execute(
-						drizzleSql`
-							insert into clients (id, name, tax_id, cellphone, store_id)
-							values (${client.id}, ${account.name}, ${account.taxId}, ${account.cellphone}, ${account.storeId})
-						`,
-					);
-				}
-			}
+			await tx.insert(clients).values(clientsSeedData);
 
 			await tx.insert(appointments).values(appointmentsSeedData);
 			await tx.insert(appointmentExdates).values(appointmentExdatesSeedData);

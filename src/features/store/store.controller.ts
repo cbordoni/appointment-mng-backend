@@ -9,7 +9,7 @@ export class StoreController extends BaseController {
 		super();
 	}
 
-	async getAll(query: PaginationQuery) {
+	async getAll(query: Omit<PaginationQuery, "storeId">) {
 		const { page = 1, limit = 10 } = query;
 
 		const result = await this.service.getAllStores(page, limit);

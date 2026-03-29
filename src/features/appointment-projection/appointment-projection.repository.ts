@@ -10,11 +10,13 @@ import {
 	ne,
 	or,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { err, ok } from "neverthrow";
 
 import { wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
 import {
+	accounts,
 	appointmentExdates,
 	appointmentOverrides,
 	appointments,
@@ -28,6 +30,9 @@ export class AppointmentProjectionRepository
 	implements IAppointmentProjectionRepository
 {
 	async findProjectionContext(from: Date, to: Date) {
+		const clientAccounts = alias(accounts, "client_accounts");
+		const professionalAccounts = alias(accounts, "professional_accounts");
+
 		const appointmentsResult = await wrapDatabaseOperation(
 			() =>
 				db
@@ -48,20 +53,27 @@ export class AppointmentProjectionRepository
 						professionalId: appointments.professionalId,
 						createdAt: appointments.createdAt,
 						updatedAt: appointments.updatedAt,
-						clientName: clients.name,
-						professionalName: professionals.name,
+						clientName: clientAccounts.name,
+						professionalName: professionalAccounts.name,
 					})
 					.from(appointments)
 					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.innerJoin(clientAccounts, eq(clients.accountId, clientAccounts.id))
 					.innerJoin(
 						professionals,
 						eq(appointments.professionalId, professionals.id),
+					)
+					.innerJoin(
+						professionalAccounts,
+						eq(professionals.accountId, professionalAccounts.id),
 					)
 					.where(
 						and(
 							isNull(appointments.deletedAt),
 							isNull(clients.deletedAt),
 							isNull(professionals.deletedAt),
+							isNull(clientAccounts.deletedAt),
+							isNull(professionalAccounts.deletedAt),
 							ne(appointments.status, "CANCELLED"),
 							lte(appointments.dtStart, to),
 							or(

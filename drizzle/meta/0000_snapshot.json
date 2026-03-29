@@ -1,5 +1,5 @@
 {
-  "id": "458ac9ba-8b54-43d0-bae3-683b03bf5d56",
+  "id": "2ffab571-c4bd-4502-bfff-b6d313444ff7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -545,26 +545,8 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tax_id": {
-          "name": "tax_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "cellphone": {
-          "name": "cellphone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "store_id": {
-          "name": "store_id",
+        "account_id": {
+          "name": "account_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -592,12 +574,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "professionals_store_id_stores_id_fk": {
-          "name": "professionals_store_id_stores_id_fk",
+        "professionals_account_id_accounts_id_fk": {
+          "name": "professionals_account_id_accounts_id_fk",
           "tableFrom": "professionals",
-          "tableTo": "stores",
+          "tableTo": "accounts",
           "columnsFrom": [
-            "store_id"
+            "account_id"
           ],
           "columnsTo": [
             "id"
@@ -607,15 +589,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "professionals_tax_id_unique": {
-          "name": "professionals_tax_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tax_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

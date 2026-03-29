@@ -1,10 +1,11 @@
 import { and, eq, gt, gte, isNull, lt, lte, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
 import { wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
-import { appointments, clients, professionals } from "@/db/schema";
+import { accounts, appointments, clients, professionals } from "@/db/schema";
 
 import type { IAppointmentRepository } from "./appointment.repository.interface";
 import type {
@@ -15,11 +16,13 @@ import type {
 export class AppointmentRepository implements IAppointmentRepository {
 	async findAll(page: number, limit: number, storeId: string) {
 		return wrapDatabaseOperation(async () => {
+			const clientAccounts = alias(accounts, "client_accounts");
 			const offset = (page - 1) * limit;
 			const conditions = and(
 				isNull(appointments.deletedAt),
 				isNull(clients.deletedAt),
-				eq(clients.storeId, storeId),
+				isNull(clientAccounts.deletedAt),
+				eq(clientAccounts.storeId, storeId),
 			);
 
 			const [items, totalResult] = await Promise.all([
@@ -27,6 +30,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 					.select({ appointment: appointments })
 					.from(appointments)
 					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.innerJoin(clientAccounts, eq(clients.accountId, clientAccounts.id))
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
@@ -34,6 +38,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 					.select({ count: sql<number>`count(*)` })
 					.from(appointments)
 					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.innerJoin(clientAccounts, eq(clients.accountId, clientAccounts.id))
 					.where(conditions),
 			]);
 
@@ -48,12 +53,17 @@ export class AppointmentRepository implements IAppointmentRepository {
 
 	async findByDateRange(storeId: string, from?: Date, to?: Date) {
 		return wrapDatabaseOperation(() => {
+			const clientAccounts = alias(accounts, "client_accounts");
+			const professionalAccounts = alias(accounts, "professional_accounts");
+
 			const conditions = [
 				isNull(appointments.deletedAt),
 				isNull(clients.deletedAt),
 				isNull(professionals.deletedAt),
-				eq(clients.storeId, storeId),
-				eq(professionals.storeId, storeId),
+				isNull(clientAccounts.deletedAt),
+				isNull(professionalAccounts.deletedAt),
+				eq(clientAccounts.storeId, storeId),
+				eq(professionalAccounts.storeId, storeId),
 				from ? gte(appointments.dtStart, from) : undefined,
 				to ? lte(appointments.dtStart, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;
@@ -74,21 +84,27 @@ export class AppointmentRepository implements IAppointmentRepository {
 					sequence: appointments.sequence,
 					dtstamp: appointments.dtstamp,
 					deletedAt: appointments.deletedAt,
-					clientName: clients.name,
-					professionalName: professionals.name,
+					clientName: clientAccounts.name,
+					professionalName: professionalAccounts.name,
 					createdAt: appointments.createdAt,
 					updatedAt: appointments.updatedAt,
 				})
 				.from(appointments)
 				.innerJoin(clients, eq(appointments.clientId, clients.id))
+				.innerJoin(clientAccounts, eq(clients.accountId, clientAccounts.id))
 				.innerJoin(
 					professionals,
 					eq(appointments.professionalId, professionals.id),
 				);
 
+			const queryWithProfessionalAccounts = baseQuery.innerJoin(
+				professionalAccounts,
+				eq(professionals.accountId, professionalAccounts.id),
+			);
+
 			return conditions.length
-				? baseQuery.where(and(...conditions))
-				: baseQuery;
+				? queryWithProfessionalAccounts.where(and(...conditions))
+				: queryWithProfessionalAccounts;
 		}, "Failed to fetch appointments");
 	}
 
@@ -122,12 +138,14 @@ export class AppointmentRepository implements IAppointmentRepository {
 		storeId: string,
 	) {
 		return wrapDatabaseOperation(async () => {
+			const clientAccounts = alias(accounts, "client_accounts");
 			const offset = (page - 1) * limit;
 			const conditions = and(
 				eq(appointments.clientId, clientId),
 				isNull(appointments.deletedAt),
 				isNull(clients.deletedAt),
-				eq(clients.storeId, storeId),
+				isNull(clientAccounts.deletedAt),
+				eq(clientAccounts.storeId, storeId),
 			);
 
 			const [items, totalResult] = await Promise.all([
@@ -135,6 +153,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 					.select({ appointment: appointments })
 					.from(appointments)
 					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.innerJoin(clientAccounts, eq(clients.accountId, clientAccounts.id))
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
@@ -142,6 +161,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 					.select({ count: sql<number>`count(*)` })
 					.from(appointments)
 					.innerJoin(clients, eq(appointments.clientId, clients.id))
+					.innerJoin(clientAccounts, eq(clients.accountId, clientAccounts.id))
 					.where(conditions),
 			]);
 
@@ -161,13 +181,15 @@ export class AppointmentRepository implements IAppointmentRepository {
 		storeId: string,
 	) {
 		return wrapDatabaseOperation(async () => {
+			const professionalAccounts = alias(accounts, "professional_accounts");
 			const offset = (page - 1) * limit;
 
 			const conditions = and(
 				eq(appointments.professionalId, professionalId),
 				isNull(appointments.deletedAt),
 				isNull(professionals.deletedAt),
-				eq(professionals.storeId, storeId),
+				isNull(professionalAccounts.deletedAt),
+				eq(professionalAccounts.storeId, storeId),
 			);
 
 			const [items, totalResult] = await Promise.all([
@@ -178,6 +200,10 @@ export class AppointmentRepository implements IAppointmentRepository {
 						professionals,
 						eq(appointments.professionalId, professionals.id),
 					)
+					.innerJoin(
+						professionalAccounts,
+						eq(professionals.accountId, professionalAccounts.id),
+					)
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
@@ -187,6 +213,10 @@ export class AppointmentRepository implements IAppointmentRepository {
 					.innerJoin(
 						professionals,
 						eq(appointments.professionalId, professionals.id),
+					)
+					.innerJoin(
+						professionalAccounts,
+						eq(professionals.accountId, professionalAccounts.id),
 					)
 					.where(conditions),
 			]);

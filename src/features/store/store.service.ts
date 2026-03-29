@@ -8,8 +8,8 @@ import {
 import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
+import type { AsyncDomainResult } from "@/common/types/database-result";
 import type { Store } from "@/db/schema";
-
 import type { IStoreRepository } from "./store.repository.interface";
 import type { CreateStoreInput, UpdateStoreInput } from "./store.types";
 
@@ -39,7 +39,7 @@ export class StoreService {
 	async getAllStores(
 		page = 1,
 		limit = 10,
-	): Promise<Result<PaginatedResponse<Store>, DatabaseError>> {
+	): AsyncDomainResult<PaginatedResponse<Partial<Store>>> {
 		logger.debug("Fetching all stores", { page, limit });
 
 		const getResult = await this.repository.findAll(page, limit);

@@ -1,7 +1,7 @@
 # Professional Feature
 
 Responsável pelo ciclo de vida de profissionais (CRUD) com paginação na listagem.
-Cada profissional pertence a uma store via `storeId`.
+Cada profissional referencia uma conta via `accountId`.
 
 ## Responsabilidades
 
@@ -32,10 +32,7 @@ Prefixo: `/professionals`
 
 ```json
 {
-  "name": "Nome",
-  "taxId": "12345678901",
-  "cellphone": "11999999999",
-  "storeId": "00000000-0000-0000-0000-000000000000"
+  "accountId": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -46,9 +43,7 @@ Prefixo: `/professionals`
 
 ```json
 {
-  "name": "Novo nome",
-  "taxId": "12345678901",
-  "cellphone": "11999999999"
+  "accountId": "00000000-0000-0000-0000-000000000001"
 }
 ```
 

@@ -65,14 +65,10 @@ CREATE TABLE "clients" (
 --> statement-breakpoint
 CREATE TABLE "professionals" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"name" text NOT NULL,
-	"tax_id" text NOT NULL,
-	"cellphone" text NOT NULL,
-	"store_id" uuid NOT NULL,
+	"account_id" uuid NOT NULL,
 	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "professionals_tax_id_unique" UNIQUE("tax_id")
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "stores" (
@@ -94,6 +90,6 @@ ALTER TABLE "appointment_overrides" ADD CONSTRAINT "appointment_overrides_profes
 ALTER TABLE "appointments" ADD CONSTRAINT "appointments_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "appointments" ADD CONSTRAINT "appointments_professional_id_professionals_id_fk" FOREIGN KEY ("professional_id") REFERENCES "public"."professionals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "clients" ADD CONSTRAINT "clients_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "professionals" ADD CONSTRAINT "professionals_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "professionals" ADD CONSTRAINT "professionals_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "appointment_exdates_appointment_exdate_unique" ON "appointment_exdates" USING btree ("appointment_id","exdate");--> statement-breakpoint
 CREATE UNIQUE INDEX "appointment_overrides_appointment_recurrence_unique" ON "appointment_overrides" USING btree ("appointment_id","recurrence_id");

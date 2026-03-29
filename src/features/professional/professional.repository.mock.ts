@@ -18,10 +18,9 @@ export class MockProfessionalRepository
 		return "Professional";
 	}
 
-	async findAll(page: number, limit: number, storeId: string) {
+	async findAll(page: number, limit: number, _storeId: string) {
 		const activeProfessionals = this.items.filter(
-			(professional) =>
-				professional.storeId === storeId && !professional.deletedAt,
+			(professional) => !professional.deletedAt,
 		);
 		const offset = (page - 1) * limit;
 		const data = activeProfessionals.slice(offset, offset + limit);
@@ -55,10 +54,7 @@ export class MockProfessionalRepository
 	async create(data: CreateProfessionalInput) {
 		const professional: Professional = {
 			id: crypto.randomUUID(),
-			name: data.name,
-			taxId: data.taxId,
-			cellphone: data.cellphone,
-			storeId: data.storeId,
+			accountId: data.accountId,
 			deletedAt: null,
 			createdAt: new Date(),
 			updatedAt: new Date(),

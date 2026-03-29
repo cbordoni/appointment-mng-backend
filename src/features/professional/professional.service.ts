@@ -8,9 +8,9 @@ import {
 import { toPaginated } from "@/common/http/to-paginated";
 import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
+import type { AsyncDomainResult } from "@/common/types/database-result";
 import type { Professional } from "@/db/schema";
-
-import type { IStoreRepository } from "../store/store.repository.interface";
+import type { IAccountRepository } from "../account/account.repository.interface";
 import type { IProfessionalRepository } from "./professional.repository.interface";
 import type {
 	CreateProfessionalInput,
@@ -20,37 +20,17 @@ import type {
 export class ProfessionalService {
 	constructor(
 		private readonly repository: IProfessionalRepository,
-		private readonly storeRepository: IStoreRepository,
+		private readonly accountRepository: IAccountRepository,
 	) {}
 
-	private validateName(name: string): Result<void, ValidationError> {
-		return name.trim().length === 0
-			? err(new ValidationError("Name cannot be empty"))
-			: ok(undefined);
-	}
-
-	private validatePhone(cellphone: string): Result<void, ValidationError> {
-		return cellphone.replace(/\D/g, "").length < 10
-			? err(new ValidationError("Invalid cellphone number"))
-			: ok(undefined);
-	}
-
-	private validateTaxId(taxId: string): Result<void, ValidationError> {
-		const digits = taxId.replace(/\D/g, "");
-
-		return digits.length === 11 || digits.length === 14
-			? ok(undefined)
-			: err(new ValidationError("Invalid tax id"));
-	}
-
-	private async validateStoreExists(
-		storeId: string,
+	private async validateAccountExists(
+		accountId: string,
 	): Promise<Result<void, ValidationError | DatabaseError>> {
-		const storeExistsResult = await this.storeRepository.exists(storeId);
+		const accountExistsResult = await this.accountRepository.exists(accountId);
 
-		return storeExistsResult.andThen((exists) => {
+		return accountExistsResult.andThen((exists) => {
 			if (!exists) {
-				return err(new ValidationError("Store not found"));
+				return err(new ValidationError("Account not found"));
 			}
 
 			return ok(undefined);
@@ -61,7 +41,7 @@ export class ProfessionalService {
 		page = 1,
 		limit = 10,
 		storeId: string,
-	): Promise<Result<PaginatedResponse<Professional>, DatabaseError>> {
+	): AsyncDomainResult<PaginatedResponse<Partial<Professional>>> {
 		logger.debug("Fetching all professionals", { page, limit, storeId });
 
 		const getResult = await this.repository.findAll(page, limit, storeId);
@@ -96,29 +76,19 @@ export class ProfessionalService {
 	async createProfessional(
 		data: CreateProfessionalInput,
 	): Promise<Result<Professional, ValidationError | DatabaseError>> {
-		logger.debug("Creating professional", { name: data.name });
+		logger.debug("Creating professional", { accountId: data.accountId });
 
-		const validationResult = this.validateName(data.name)
-			.andThen(() => this.validateTaxId(data.taxId))
-			.andThen(() => this.validatePhone(data.cellphone));
+		const accountValidationResult = await this.validateAccountExists(
+			data.accountId,
+		);
 
-		if (validationResult.isErr()) {
-			logger.warn("Professional creation failed: invalid input", {
-				reason: validationResult.error.message,
+		if (accountValidationResult.isErr()) {
+			logger.warn("Professional creation failed: invalid account", {
+				accountId: data.accountId,
+				reason: accountValidationResult.error.message,
 			});
 
-			return err(validationResult.error);
-		}
-
-		const storeValidationResult = await this.validateStoreExists(data.storeId);
-
-		if (storeValidationResult.isErr()) {
-			logger.warn("Professional creation failed: invalid store", {
-				storeId: data.storeId,
-				reason: storeValidationResult.error.message,
-			});
-
-			return err(storeValidationResult.error);
+			return err(accountValidationResult.error);
 		}
 
 		const createResult = await this.repository.create(data);
@@ -126,7 +96,7 @@ export class ProfessionalService {
 		return createResult.map((professional) => {
 			logger.info("Professional created successfully", {
 				id: professional.id,
-				name: professional.name,
+				accountId: professional.accountId,
 			});
 
 			return professional;
@@ -141,24 +111,19 @@ export class ProfessionalService {
 	> {
 		logger.debug("Updating professional", { id, fields: Object.keys(data) });
 
-		const nameValidationResult =
-			data.name !== undefined ? this.validateName(data.name) : ok(undefined);
+		if (data.accountId !== undefined) {
+			const accountValidationResult = await this.validateAccountExists(
+				data.accountId,
+			);
 
-		const taxIdValidationResult =
-			data.taxId !== undefined ? this.validateTaxId(data.taxId) : ok(undefined);
+			if (accountValidationResult.isErr()) {
+				logger.warn("Professional update failed: invalid account", {
+					id,
+					accountId: data.accountId,
+				});
 
-		const phoneValidationResult =
-			data.cellphone !== undefined
-				? this.validatePhone(data.cellphone)
-				: ok(undefined);
-
-		const validationResult = nameValidationResult
-			.andThen(() => taxIdValidationResult)
-			.andThen(() => phoneValidationResult);
-
-		if (validationResult.isErr()) {
-			logger.warn("Professional update failed: invalid input", { id });
-			return err(validationResult.error);
+				return err(accountValidationResult.error);
+			}
 		}
 
 		const updateResult = await this.repository.update(id, data);

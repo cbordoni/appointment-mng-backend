@@ -53,12 +53,9 @@ export type NewClient = typeof clients.$inferInsert;
 
 export const professionals = pgTable("professionals", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	name: text("name").notNull(),
-	taxId: text("tax_id").notNull().unique(),
-	cellphone: text("cellphone").notNull(),
-	storeId: uuid("store_id")
+	accountId: uuid("account_id")
 		.notNull()
-		.references(() => stores.id, { onDelete: "cascade" }),
+		.references(() => accounts.id, { onDelete: "cascade" }),
 	deletedAt: timestamp("deleted_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),

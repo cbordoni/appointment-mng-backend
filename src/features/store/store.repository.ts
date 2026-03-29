@@ -29,7 +29,16 @@ export class StoreRepository implements IStoreRepository {
 			const notDeleted = isNull(stores.deletedAt);
 
 			const [items, total] = await Promise.all([
-				db.select().from(stores).where(notDeleted).limit(limit).offset(offset),
+				db
+					.select({
+						id: stores.id,
+						name: stores.name,
+						email: stores.email,
+					})
+					.from(stores)
+					.where(notDeleted)
+					.limit(limit)
+					.offset(offset),
 				getTableCount(stores, notDeleted),
 			]);
 

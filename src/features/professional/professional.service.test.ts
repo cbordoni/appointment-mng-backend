@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 
 import { ValidationError } from "@/common/errors";
-import { MockStoreRepository } from "@/features/store/store.repository.mock";
+import { MockAccountRepository } from "@/features/account/account.repository.mock";
 
 import { MockProfessionalRepository } from "./professional.repository.mock";
 import { ProfessionalService } from "./professional.service";
@@ -13,22 +13,44 @@ import type {
 describe("ProfessionalService", () => {
 	let professionalService: ProfessionalService;
 	let mockRepository: MockProfessionalRepository;
-	let mockStoreRepository: MockStoreRepository;
+	let mockAccountRepository: MockAccountRepository;
 
-	const validStoreId = "00000000-0000-0000-0000-000000000010";
-	const anotherValidStoreId = "00000000-0000-0000-0000-000000000011";
-	const invalidStoreId = "00000000-0000-0000-0000-000000000099";
+	const validStoreId = "00000000-0000-0000-0000-000000000100";
+	const anotherValidStoreId = "00000000-0000-0000-0000-000000000200";
+	const validAccountId = "00000000-0000-0000-0000-000000000010";
+	const anotherValidAccountId = "00000000-0000-0000-0000-000000000011";
+	const invalidAccountId = "00000000-0000-0000-0000-000000000099";
 
 	beforeEach(() => {
 		mockRepository = new MockProfessionalRepository();
-		mockStoreRepository = new MockStoreRepository();
-		mockStoreRepository.setExistingStoreIds([
-			validStoreId,
-			anotherValidStoreId,
+		mockAccountRepository = new MockAccountRepository();
+		mockAccountRepository.setAccounts([
+			{
+				id: validAccountId,
+				name: "Account One",
+				taxId: null,
+				cellphone: "+55 11 90000-0001",
+				passwordHash: "hash",
+				storeId: validStoreId,
+				deletedAt: null,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			},
+			{
+				id: anotherValidAccountId,
+				name: "Account Two",
+				taxId: null,
+				cellphone: "+55 11 90000-0002",
+				passwordHash: "hash",
+				storeId: anotherValidStoreId,
+				deletedAt: null,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			},
 		]);
 		professionalService = new ProfessionalService(
 			mockRepository,
-			mockStoreRepository,
+			mockAccountRepository,
 		);
 	});
 
@@ -37,20 +59,14 @@ describe("ProfessionalService", () => {
 			const mockProfessionals = [
 				{
 					id: "1",
-					name: "Dr. John Doe",
-					taxId: "12345678901",
-					cellphone: "11999999999",
-					storeId: validStoreId,
+					accountId: validAccountId,
 					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 				},
 				{
 					id: "2",
-					name: "Dr. Jane Doe",
-					taxId: "10987654321",
-					cellphone: "11888888888",
-					storeId: anotherValidStoreId,
+					accountId: anotherValidAccountId,
 					deletedAt: null,
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -69,11 +85,10 @@ describe("ProfessionalService", () => {
 
 			if (result.isOk()) {
 				const response = result.value;
-				expect(response.data).toHaveLength(1);
-				expect(response.data[0]?.storeId).toBe(validStoreId);
+				expect(response.data).toHaveLength(2);
 				expect(response.meta.page).toBe(1);
 				expect(response.meta.limit).toBe(10);
-				expect(response.meta.total).toBe(1);
+				expect(response.meta.total).toBe(2);
 				expect(response.meta.totalPages).toBe(1);
 			}
 		});
@@ -83,10 +98,7 @@ describe("ProfessionalService", () => {
 		it("should return professional when id exists", async () => {
 			const mockProfessional = {
 				id: "123",
-				name: "Dr. John Doe",
-				taxId: "12345678901",
-				cellphone: "11999999999",
-				storeId: validStoreId,
+				accountId: validAccountId,
 				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -100,7 +112,7 @@ describe("ProfessionalService", () => {
 
 			if (result.isOk()) {
 				expect(result.value.id).toBe("123");
-				expect(result.value.name).toBe("Dr. John Doe");
+				expect(result.value.accountId).toBe(validAccountId);
 			}
 		});
 	});
@@ -108,10 +120,7 @@ describe("ProfessionalService", () => {
 	describe("createProfessional", () => {
 		it("should create professional successfully with valid data", async () => {
 			const input: CreateProfessionalInput = {
-				name: "Dr. John Doe",
-				taxId: "12345678901",
-				cellphone: "11999999999",
-				storeId: validStoreId,
+				accountId: validAccountId,
 			};
 
 			const result = await professionalService.createProfessional(input);
@@ -120,19 +129,14 @@ describe("ProfessionalService", () => {
 
 			if (result.isOk()) {
 				const professional = result.value;
-				expect(professional.name).toBe("Dr. John Doe");
-				expect(professional.taxId).toBe("12345678901");
-				expect(professional.cellphone).toBe("11999999999");
+				expect(professional.accountId).toBe(validAccountId);
 				expect(professional.id).toBeDefined();
 			}
 		});
 
-		it("should fail when name is empty", async () => {
+		it("should fail when account does not exist", async () => {
 			const input: CreateProfessionalInput = {
-				name: "   ",
-				taxId: "12345678901",
-				cellphone: "11999999999",
-				storeId: validStoreId,
+				accountId: invalidAccountId,
 			};
 
 			const result = await professionalService.createProfessional(input);
@@ -141,43 +145,7 @@ describe("ProfessionalService", () => {
 
 			if (result.isErr()) {
 				expect(result.error).toBeInstanceOf(ValidationError);
-				expect(result.error.message).toBe("Name cannot be empty");
-			}
-		});
-
-		it("should fail when tax id is invalid", async () => {
-			const input: CreateProfessionalInput = {
-				name: "Dr. John Doe",
-				taxId: "1234",
-				cellphone: "11999999999",
-				storeId: validStoreId,
-			};
-
-			const result = await professionalService.createProfessional(input);
-
-			expect(result.isErr()).toBe(true);
-
-			if (result.isErr()) {
-				expect(result.error).toBeInstanceOf(ValidationError);
-				expect(result.error.message).toBe("Invalid tax id");
-			}
-		});
-
-		it("should fail when store does not exist", async () => {
-			const input: CreateProfessionalInput = {
-				name: "Dr. John Doe",
-				taxId: "12345678901",
-				cellphone: "11999999999",
-				storeId: invalidStoreId,
-			};
-
-			const result = await professionalService.createProfessional(input);
-
-			expect(result.isErr()).toBe(true);
-
-			if (result.isErr()) {
-				expect(result.error).toBeInstanceOf(ValidationError);
-				expect(result.error.message).toBe("Store not found");
+				expect(result.error.message).toBe("Account not found");
 			}
 		});
 	});
@@ -186,10 +154,7 @@ describe("ProfessionalService", () => {
 		beforeEach(() => {
 			const mockProfessional = {
 				id: "123",
-				name: "Dr. John Doe",
-				taxId: "12345678901",
-				cellphone: "11999999999",
-				storeId: validStoreId,
+				accountId: validAccountId,
 				deletedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -200,7 +165,7 @@ describe("ProfessionalService", () => {
 
 		it("should update professional successfully", async () => {
 			const input: UpdateProfessionalInput = {
-				name: "Dr. Jane Doe",
+				accountId: anotherValidAccountId,
 			};
 
 			const result = await professionalService.updateProfessional("123", input);
@@ -208,13 +173,13 @@ describe("ProfessionalService", () => {
 			expect(result.isOk()).toBe(true);
 
 			if (result.isOk()) {
-				expect(result.value.name).toBe("Dr. Jane Doe");
+				expect(result.value.accountId).toBe(anotherValidAccountId);
 			}
 		});
 
-		it("should fail when updating with invalid cellphone", async () => {
+		it("should fail when updating with invalid account", async () => {
 			const input: UpdateProfessionalInput = {
-				cellphone: "123",
+				accountId: invalidAccountId,
 			};
 
 			const result = await professionalService.updateProfessional("123", input);
@@ -223,7 +188,7 @@ describe("ProfessionalService", () => {
 
 			if (result.isErr()) {
 				expect(result.error).toBeInstanceOf(ValidationError);
-				expect(result.error.message).toBe("Invalid cellphone number");
+				expect(result.error.message).toBe("Account not found");
 			}
 		});
 	});
