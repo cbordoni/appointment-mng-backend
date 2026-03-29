@@ -11,6 +11,7 @@ import { appointmentRoutes } from "@/features/appointment/appointment.routes";
 import { appointmentExceptionRoutes } from "@/features/appointment-exception/appointment-exception.routes";
 import { appointmentOverrideRoutes } from "@/features/appointment-override/appointment-override.routes";
 import { appointmentProjectionRoutes } from "@/features/appointment-projection/appointment-projection.routes";
+import { authRoutes } from "@/features/auth/auth.routes";
 import { clientRoutes } from "@/features/client/client.routes";
 import { healthRoutes } from "@/features/health/health.routes";
 import { professionalRoutes } from "@/features/professional/professional.routes";
@@ -35,6 +36,10 @@ export const app = new Elysia()
 				},
 				tags: [
 					{ name: "Stores", description: "Store management endpoints" },
+					{
+						name: "Authentication",
+						description: "User authentication endpoints",
+					},
 					{ name: "Accounts", description: "Account management endpoints" },
 					{ name: "Clients", description: "Client management endpoints" },
 					{
@@ -68,6 +73,7 @@ export const app = new Elysia()
 		},
 	})
 	.use(healthRoutes)
+	.use(authRoutes)
 	.use(storeRoutes)
 	.use(accountRoutes)
 	.use(clientRoutes)

@@ -1,0 +1,47 @@
+@baseUrl = http://localhost:3000
+@json = application/json
+
+### Login with valid credentials
+POST {{baseUrl}}/auth/login
+Content-Type: {{json}}
+
+{
+  "taxId": "12345678901",
+  "password": "12345678"
+}
+
+### Login with invalid taxId (not found)
+POST {{baseUrl}}/auth/login
+Content-Type: {{json}}
+
+{
+  "taxId": "99999999999",
+  "password": "12345678"
+}
+
+### Login with invalid password
+POST {{baseUrl}}/auth/login
+Content-Type: {{json}}
+
+{
+  "taxId": "12345678901",
+  "password": "wrongpassword"
+}
+
+### Login with invalid taxId format (too short)
+POST {{baseUrl}}/auth/login
+Content-Type: {{json}}
+
+{
+  "taxId": "123",
+  "password": "12345678"
+}
+
+### Login with invalid password format (too short)
+POST {{baseUrl}}/auth/login
+Content-Type: {{json}}
+
+{
+  "taxId": "12345678901",
+  "password": "short"
+}
