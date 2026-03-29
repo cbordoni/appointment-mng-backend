@@ -4,7 +4,8 @@
 @accountId = 22222222-2222-4222-8222-222222222222
 
 ### List accounts
-GET {{baseUrl}}/accounts?storeId={{storeId}}&page=1&limit=10
+GET {{baseUrl}}/accounts?page=1&limit=10
+x-store-id: {{storeId}}
 
 ### Get account by id
 GET {{baseUrl}}/accounts/{{accountId}}

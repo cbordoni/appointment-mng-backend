@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 
 import { requireAuth } from "@/common/http/auth.middleware";
-import { PaginationQuerySchema } from "@/common/types";
+import { PaginationQuerySchema, StoreHeaderSchema } from "@/common/types";
 
 import { controller } from ".";
 import {
@@ -14,11 +14,12 @@ export const accountRoutes = new Elysia({ prefix: "/accounts" })
 	.use(requireAuth)
 	.get(
 		"/",
-		async ({ query }) => {
-			return await controller.getAll(query);
+		async ({ query, headers }) => {
+			return await controller.getAll(query, headers["x-store-id"]);
 		},
 		{
 			query: PaginationQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get all accounts with pagination",
 				tags: ["Accounts"],

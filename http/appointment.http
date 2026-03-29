@@ -6,13 +6,16 @@
 @appointmentId = 55555555-5555-4555-8555-555555555555
 
 ### List appointments by date range
-GET {{baseUrl}}/appointments?storeId={{storeId}}&from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.999Z
+GET {{baseUrl}}/appointments?from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.999Z
+x-store-id: {{storeId}}
 
 ### List appointments by client
-GET {{baseUrl}}/appointments/client/{{clientId}}?storeId={{storeId}}&page=1&limit=10
+GET {{baseUrl}}/appointments/client/{{clientId}}?page=1&limit=10
+x-store-id: {{storeId}}
 
 ### List appointments by professional
-GET {{baseUrl}}/appointments/professional/{{professionalId}}?storeId={{storeId}}&page=1&limit=10
+GET {{baseUrl}}/appointments/professional/{{professionalId}}?page=1&limit=10
+x-store-id: {{storeId}}
 
 ### Get appointment by id
 GET {{baseUrl}}/appointments/{{appointmentId}}

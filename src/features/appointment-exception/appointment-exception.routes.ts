@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 
 import { requireAuth } from "@/common/http/auth.middleware";
-import { PaginationQuerySchema } from "@/common/types";
+import { PaginationQuerySchema, StoreHeaderSchema } from "@/common/types";
 import { controller } from ".";
 import {
 	AppointmentExceptionIdSchema,
@@ -20,6 +20,7 @@ export const appointmentExceptionRoutes = new Elysia({
 		},
 		{
 			query: PaginationQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get all appointment exceptions with pagination",
 				tags: ["AppointmentExceptions"],

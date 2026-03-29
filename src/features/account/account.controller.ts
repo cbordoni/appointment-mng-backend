@@ -9,8 +9,8 @@ export class AccountController extends BaseController {
 		super();
 	}
 
-	async getAll(query: PaginationQuery) {
-		const { page = 1, limit = 10, storeId } = query;
+	async getAll(query: PaginationQuery, storeId: string) {
+		const { page = 1, limit = 10 } = query;
 
 		const result = await this.service.getAllAccounts(page, limit, storeId);
 

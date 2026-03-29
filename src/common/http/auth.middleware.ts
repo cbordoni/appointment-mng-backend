@@ -15,9 +15,12 @@ export const requireAuth = (app: Elysia) => {
 		.decorate("user", null as JWTPayload | null)
 		.onBeforeHandle(async (context) => {
 			const { headers, set } = context;
-			const authHeader = headers["authorization"];
 
-			if (!authHeader || !authHeader.startsWith("Bearer ")) {
+			const authorization =
+				context.request.headers.get("authorization") ??
+				headers["authorization"];
+
+			if (!authorization || !authorization.startsWith("Bearer ")) {
 				logger.warn("Missing or invalid authorization header");
 				set.status = 401;
 
@@ -27,7 +30,7 @@ export const requireAuth = (app: Elysia) => {
 				};
 			}
 
-			const [_, token] = authHeader.split("Bearer ");
+			const [_, token] = authorization.split("Bearer ");
 			const payload = await jwtService.verify(token);
 
 			if (!payload) {
@@ -40,17 +43,15 @@ export const requireAuth = (app: Elysia) => {
 				};
 			}
 
-			const { storeId } = context.query ?? {};
+			const storeId =
+				context.request.headers.get("x-store-id") ?? headers["x-store-id"];
 
 			if (storeId && storeId !== payload.storeId) {
-				logger.warn(
-					"Store access forbidden: route storeId differs from token",
-					{
-						storeId,
-						tokenStoreId: payload.storeId,
-						accountId: payload.accountId,
-					},
-				);
+				logger.warn("Store access forbidden: x-store-id differs from token", {
+					storeId,
+					tokenStoreId: payload.storeId,
+					accountId: payload.accountId,
+				});
 
 				set.status = 403;
 

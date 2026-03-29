@@ -78,21 +78,17 @@ export class AppointmentService {
 		return ok(undefined);
 	}
 
-	async getAllAppointments(query: DateRangeQuery) {
+	async getAllAppointments(storeId: string, query: DateRangeQuery) {
 		const from = query.from ? new Date(query.from) : undefined;
 		const to = query.to ? new Date(query.to) : undefined;
 
 		logger.debug("Fetching appointments by date range", {
-			storeId: query.storeId,
+			storeId,
 			from,
 			to,
 		});
 
-		const result = await this.repository.findByDateRange(
-			query.storeId,
-			from,
-			to,
-		);
+		const result = await this.repository.findByDateRange(storeId, from, to);
 
 		return result.map((items) => {
 			logger.info("Appointments fetched successfully", { count: items.length });

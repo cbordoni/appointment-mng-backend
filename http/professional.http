@@ -5,7 +5,8 @@
 @professionalId = 44444444-4444-4444-8444-444444444444
 
 ### List professionals
-GET {{baseUrl}}/professionals?storeId={{storeId}}&page=1&limit=10
+GET {{baseUrl}}/professionals?page=1&limit=10
+x-store-id: {{storeId}}
 
 ### Get professional by id
 GET {{baseUrl}}/professionals/{{professionalId}}

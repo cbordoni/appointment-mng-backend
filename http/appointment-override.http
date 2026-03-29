@@ -6,7 +6,8 @@
 @appointmentOverrideId = 77777777-7777-4777-8777-777777777777
 
 ### List appointment overrides
-GET {{baseUrl}}/appointment-overrides?storeId={{storeId}}&page=1&limit=10
+GET {{baseUrl}}/appointment-overrides?page=1&limit=10
+x-store-id: {{storeId}}
 
 ### Get appointment override by id
 GET {{baseUrl}}/appointment-overrides/{{appointmentOverrideId}}

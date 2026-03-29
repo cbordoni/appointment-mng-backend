@@ -26,7 +26,7 @@ const createToken = async (storeId: string) => {
 const createProtectedApp = () => {
 	return new Elysia()
 		.use(requireAuth)
-		.get("/stores/:storeId", () => {
+		.get("/stores", () => {
 			return { ok: true };
 		})
 		.get("/profile", () => {
@@ -35,14 +35,15 @@ const createProtectedApp = () => {
 };
 
 describe("requireAuth", () => {
-	it("should allow request when route storeId matches token storeId", async () => {
+	it("should allow request when x-store-id matches token storeId", async () => {
 		const app = createProtectedApp();
 		const token = await createToken("store-001");
 
 		const response = await app.handle(
-			new Request("http://localhost/stores/store-001", {
+			new Request("http://localhost/stores", {
 				headers: {
 					authorization: `Bearer ${token}`,
+					"x-store-id": "store-001",
 				},
 			}),
 		);
@@ -50,14 +51,15 @@ describe("requireAuth", () => {
 		expect(response.status).toBe(200);
 	});
 
-	it("should return 403 when route storeId differs from token storeId", async () => {
+	it("should return 403 when x-store-id differs from token storeId", async () => {
 		const app = createProtectedApp();
 		const token = await createToken("store-001");
 
 		const response = await app.handle(
-			new Request("http://localhost/stores/store-999", {
+			new Request("http://localhost/stores", {
 				headers: {
 					authorization: `Bearer ${token}`,
+					"x-store-id": "store-999",
 				},
 			}),
 		);
@@ -69,7 +71,7 @@ describe("requireAuth", () => {
 		});
 	});
 
-	it("should allow request when route has no storeId param", async () => {
+	it("should allow request when route has no x-store-id", async () => {
 		const app = createProtectedApp();
 		const token = await createToken("store-001");
 
@@ -87,9 +89,7 @@ describe("requireAuth", () => {
 	it("should return 401 when authorization header is missing", async () => {
 		const app = createProtectedApp();
 
-		const response = await app.handle(
-			new Request("http://localhost/stores/store-001"),
-		);
+		const response = await app.handle(new Request("http://localhost/stores"));
 
 		expect(response.status).toBe(401);
 		expect(await response.json()).toEqual({

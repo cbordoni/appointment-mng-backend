@@ -90,9 +90,7 @@ describe("AppointmentService", () => {
 			await repository.create(makeAppointment());
 			await repository.create(makeAppointment({ summary: "Second Session" }));
 
-			const result = await service.getAllAppointments({
-				storeId: BASE_STORE_ID,
-			});
+			const result = await service.getAllAppointments(BASE_STORE_ID, {});
 
 			expect(result.isOk()).toBe(true);
 
@@ -113,9 +111,7 @@ describe("AppointmentService", () => {
 				}),
 			);
 
-			const result = await service.getAllAppointments({
-				storeId: BASE_STORE_ID,
-			});
+			const result = await service.getAllAppointments(BASE_STORE_ID, {});
 
 			expect(result.isOk()).toBe(true);
 
