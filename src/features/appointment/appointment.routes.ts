@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 
+import { requireAuth } from "@/common/http/auth.middleware";
 import { PaginationQuerySchema } from "@/common/types";
 import { controller } from ".";
 import {
@@ -10,6 +11,7 @@ import {
 } from "./appointment.types";
 
 export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
+	.use(requireAuth)
 	.get(
 		"/",
 		async ({ query }) => {

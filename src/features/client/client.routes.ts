@@ -1,10 +1,12 @@
 import { Elysia } from "elysia";
 
+import { requireAuth } from "@/common/http/auth.middleware";
 import { PaginationQuerySchema } from "@/common/types";
 import { controller } from ".";
 import { ClientIdSchema, CreateClientSchema } from "./client.types";
 
 export const clientRoutes = new Elysia({ prefix: "/clients" })
+	.use(requireAuth)
 	.get(
 		"/",
 		async ({ query }) => {

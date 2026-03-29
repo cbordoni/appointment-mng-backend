@@ -4,6 +4,7 @@ export interface JWTPayload {
 	accountId: string;
 	taxId: string;
 	name: string;
+	storeId: string;
 	iat: number;
 	exp: number;
 }

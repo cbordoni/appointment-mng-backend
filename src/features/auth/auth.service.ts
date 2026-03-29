@@ -37,6 +37,7 @@ export class AuthService {
 			accountId: account.id,
 			taxId: account.taxId || "",
 			name: account.name,
+			storeId: account.storeId,
 		});
 
 		return {

@@ -11,34 +11,55 @@ export interface AuthContext {
 }
 
 export const requireAuth = (app: Elysia) => {
-	return app.onBeforeHandle(async ({ headers, set }) => {
-		const authHeader = headers["authorization"];
+	return app
+		.decorate("user", null as JWTPayload | null)
+		.onBeforeHandle(async (context) => {
+			const { headers, set } = context;
+			const authHeader = headers["authorization"];
 
-		if (!authHeader || !authHeader.startsWith("Bearer ")) {
-			logger.warn("Missing or invalid authorization header");
-			set.status = 401;
+			if (!authHeader || !authHeader.startsWith("Bearer ")) {
+				logger.warn("Missing or invalid authorization header");
+				set.status = 401;
 
-			return {
-				code: "UNAUTHORIZED",
-				message: "Missing or invalid authorization header",
-			};
-		}
+				return {
+					code: "UNAUTHORIZED",
+					message: "Missing or invalid authorization header",
+				};
+			}
 
-		const [_, token] = authHeader.split("Bearer ");
-		const payload = await jwtService.verify(token);
+			const [_, token] = authHeader.split("Bearer ");
+			const payload = await jwtService.verify(token);
 
-		if (!payload) {
-			logger.warn("Invalid or expired token");
-			set.status = 401;
+			if (!payload) {
+				logger.warn("Invalid or expired token");
+				set.status = 401;
 
-			return {
-				code: "UNAUTHORIZED",
-				message: "Invalid or expired token",
-			};
-		}
+				return {
+					code: "UNAUTHORIZED",
+					message: "Invalid or expired token",
+				};
+			}
 
-		return {
-			auth: { user: payload },
-		};
-	});
+			const { storeId } = context.query ?? {};
+
+			if (storeId && storeId !== payload.storeId) {
+				logger.warn(
+					"Store access forbidden: route storeId differs from token",
+					{
+						storeId,
+						tokenStoreId: payload.storeId,
+						accountId: payload.accountId,
+					},
+				);
+
+				set.status = 403;
+
+				return {
+					code: "FORBIDDEN",
+					message: "You are not allowed to access this store",
+				};
+			}
+
+			context.user = payload;
+		});
 };
