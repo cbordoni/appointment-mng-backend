@@ -1,0 +1,7 @@
+@baseUrl = http://localhost:3000
+
+### API root
+GET {{baseUrl}}/
+
+### Health check
+GET {{baseUrl}}/health/

@@ -1,0 +1,42 @@
+@baseUrl = http://localhost:3000
+@json = application/json
+@storeId = 11111111-1111-4111-8111-111111111111
+@appointmentId = 55555555-5555-4555-8555-555555555555
+@professionalId = 44444444-4444-4444-8444-444444444444
+@appointmentOverrideId = 77777777-7777-4777-8777-777777777777
+
+### List appointment overrides
+GET {{baseUrl}}/appointment-overrides?storeId={{storeId}}&page=1&limit=10
+
+### Get appointment override by id
+GET {{baseUrl}}/appointment-overrides/{{appointmentOverrideId}}
+
+### Create appointment override
+POST {{baseUrl}}/appointment-overrides
+Content-Type: {{json}}
+
+{
+  "appointmentId": "{{appointmentId}}",
+  "recurrenceId": "2026-04-01T09:00:00.000Z",
+  "summary": "Consulta reagendada",
+  "description": "Horário ajustado",
+  "dtstart": "2026-04-01T10:00:00.000Z",
+  "dtend": "2026-04-01T10:30:00.000Z",
+  "status": "CONFIRMED",
+  "professionalId": "{{professionalId}}",
+  "sequence": 1,
+  "dtstamp": "2026-03-29T12:00:00.000Z"
+}
+
+### Update appointment override
+PATCH {{baseUrl}}/appointment-overrides/{{appointmentOverrideId}}
+Content-Type: {{json}}
+
+{
+  "summary": "Consulta reagendada (ajuste)",
+  "description": null,
+  "sequence": 2
+}
+
+### Delete appointment override
+DELETE {{baseUrl}}/appointment-overrides/{{appointmentOverrideId}}
