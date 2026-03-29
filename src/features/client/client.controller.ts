@@ -2,7 +2,7 @@ import { BaseController } from "@/common/http/base-controller";
 
 import type { PaginationQuery } from "@/common/types";
 import type { ClientService } from "./client.service";
-import type { CreateClientInput, UpdateClientInput } from "./client.types";
+import type { CreateClientInput } from "./client.types";
 
 export class ClientController extends BaseController {
 	constructor(private readonly service: ClientService) {
@@ -17,22 +17,10 @@ export class ClientController extends BaseController {
 		return result.match((data) => ({ data }), this.handleError);
 	}
 
-	async getById(id: string) {
-		const result = await this.service.getClientById(id);
-
-		return result.match((data) => ({ data }), this.handleError);
-	}
-
 	async create(data: CreateClientInput) {
 		const result = await this.service.createClient(data);
 
 		return result.match((data) => ({ data, status: 201 }), this.handleError);
-	}
-
-	async update(id: string, data: UpdateClientInput) {
-		const result = await this.service.updateClient(id, data);
-
-		return result.match((data) => ({ data }), this.handleError);
 	}
 
 	async delete(id: string) {

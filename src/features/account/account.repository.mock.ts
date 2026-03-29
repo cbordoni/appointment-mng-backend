@@ -118,4 +118,20 @@ export class MockAccountRepository
 	clearAccounts() {
 		this.clearItems();
 	}
+
+	setExistingAccountIds(ids: string[]): void {
+		const accounts = ids.map((id) => ({
+			id,
+			name: `Account ${id}`,
+			taxId: null,
+			cellphone: "+55 11 98765-4321",
+			passwordHash: "hashed_password",
+			storeId: "00000000-0000-0000-0000-000000000001",
+			deletedAt: null,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		}));
+
+		this.setItems(accounts);
+	}
 }

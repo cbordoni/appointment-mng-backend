@@ -1,30 +1,43 @@
-import { err, ok, type Result } from "neverthrow";
+import { err, ok } from "neverthrow";
 
-import { type DatabaseError, NotFoundError } from "@/common/errors";
-import type { Client } from "@/db/schema";
-import { BaseInMemoryRepository } from "@/testing/base-in-memory-repository";
+import { NotFoundError } from "@/common/errors";
+import type { Account, Client } from "@/db/schema";
 
-import type { IClientRepository } from "./client.repository.interface";
-import type { CreateClientInput, UpdateClientInput } from "./client.types";
+import type {
+	ClientListItem,
+	IClientRepository,
+} from "./client.repository.interface";
+import type { CreateClientInput } from "./client.types";
 
-export class MockClientRepository
-	extends BaseInMemoryRepository<Client>
-	implements IClientRepository
-{
-	protected get entityName(): string {
-		return "Client";
-	}
+export class MockClientRepository implements IClientRepository {
+	private items: Client[] = [];
+
+	private accountsMap: Map<string, Account> = new Map();
 
 	async findAll(page: number, limit: number, storeId: string) {
-		const activeClients = this.items.filter(
-			(client) => client.storeId === storeId && !client.deletedAt,
-		);
+		const activeClients = this.items.filter((client) => !client.deletedAt);
+
+		const filteredClients = activeClients.filter((client) => {
+			const account = this.accountsMap.get(client.accountId);
+
+			return account?.storeId === storeId;
+		});
+
 		const offset = (page - 1) * limit;
-		const data = activeClients.slice(offset, offset + limit);
+		const clientsData = filteredClients.slice(offset, offset + limit);
+
+		const items: ClientListItem[] = clientsData
+			.map((client) => this.accountsMap.get(client.accountId))
+			.filter((account) => account !== undefined)
+			.map((account) => ({
+				id: account.id,
+				name: account.name,
+				cellphone: account.cellphone,
+			})) as ClientListItem[];
 
 		return ok({
-			items: data,
-			total: activeClients.length,
+			items,
+			total: filteredClients.length,
 		});
 	}
 
@@ -32,7 +45,7 @@ export class MockClientRepository
 		const client = this.items.find((item) => item.id === id && !item.deletedAt);
 
 		if (!client) {
-			return err(new NotFoundError(this.entityName, id));
+			return err(new NotFoundError("Client", id));
 		}
 
 		return ok(client);
@@ -49,10 +62,7 @@ export class MockClientRepository
 	async create(data: CreateClientInput) {
 		const client: Client = {
 			id: crypto.randomUUID(),
-			name: data.name,
-			taxId: data.taxId ?? null,
-			cellphone: data.cellphone,
-			storeId: data.storeId,
+			accountId: data.accountId,
 			deletedAt: null,
 			createdAt: new Date(),
 			updatedAt: new Date(),
@@ -63,54 +73,43 @@ export class MockClientRepository
 		return ok(client);
 	}
 
-	private async updateClientAtIndex(
-		id: string,
-		updater: (client: Client) => Client,
-	): Promise<Result<Client, NotFoundError | DatabaseError>> {
+	async delete(id: string) {
 		const index = this.items.findIndex(
 			(client) => client.id === id && !client.deletedAt,
 		);
 
 		if (index === -1) {
-			return err(new NotFoundError(this.entityName, id));
+			return err(new NotFoundError("Client", id));
 		}
 
 		const currentClient = this.items[index];
-		const updated = updater(currentClient);
-
-		this.items[index] = updated;
-
-		return ok(updated);
-	}
-
-	async update(id: string, data: UpdateClientInput) {
-		return this.updateClientAtIndex(id, (currentClient) => ({
-			...currentClient,
-			...data,
-			updatedAt: new Date(),
-		}));
-	}
-
-	async delete(id: string) {
-		const result = await this.updateClientAtIndex(id, (currentClient) => ({
+		const updated: Client = {
 			...currentClient,
 			deletedAt: new Date(),
 			updatedAt: new Date(),
-		}));
+		};
 
-		if (result.isErr()) {
-			return err(result.error);
-		}
+		this.items[index] = updated;
 
 		return ok(undefined);
 	}
 
-	// Alias helper methods for testing
-	setClients(clients: Client[]) {
-		this.setItems(clients);
+	setClients(clients: Client[]): void {
+		this.items = clients;
 	}
 
-	clearClients() {
-		this.clearItems();
+	clearClients(): void {
+		this.items = [];
+	}
+
+	setAccounts(accounts: Account[]): void {
+		this.accountsMap.clear();
+		accounts.forEach((account) => {
+			this.accountsMap.set(account.id, account);
+		});
+	}
+
+	clearAccounts(): void {
+		this.accountsMap.clear();
 	}
 }

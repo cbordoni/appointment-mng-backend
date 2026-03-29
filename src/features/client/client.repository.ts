@@ -2,12 +2,12 @@ import { and, eq, isNull } from "drizzle-orm";
 import { err, ok } from "neverthrow";
 
 import { NotFoundError } from "@/common/errors";
-import { getTableCount, wrapDatabaseOperation } from "@/common/utils/database";
+import { wrapDatabaseOperation } from "@/common/utils/database";
 import { db } from "@/db";
-import { clients } from "@/db/schema";
+import { accounts, clients } from "@/db/schema";
 
 import type { IClientRepository } from "./client.repository.interface";
-import type { CreateClientInput, UpdateClientInput } from "./client.types";
+import type { CreateClientInput } from "./client.types";
 
 export class ClientRepository implements IClientRepository {
 	async findAll(page: number, limit: number, storeId: string) {
@@ -17,35 +17,29 @@ export class ClientRepository implements IClientRepository {
 
 			const [items, total] = await Promise.all([
 				db
-					.select()
+					.select({
+						id: accounts.id,
+						name: accounts.name,
+						cellphone: accounts.cellphone,
+					})
 					.from(clients)
-					.where(and(eq(clients.storeId, storeId), notDeleted))
+					.innerJoin(accounts, eq(clients.accountId, accounts.id))
+					.where(and(notDeleted, eq(accounts.storeId, storeId)))
 					.limit(limit)
 					.offset(offset),
-				getTableCount(clients, and(eq(clients.storeId, storeId), notDeleted)),
+				db
+					.select({ id: clients.id })
+					.from(clients)
+					.innerJoin(accounts, eq(clients.accountId, accounts.id))
+					.where(and(notDeleted, eq(accounts.storeId, storeId)))
+					.then((rows) => rows.length),
 			]);
 
-			return { items, total };
+			return {
+				items,
+				total,
+			};
 		}, "Failed to fetch clients");
-	}
-
-	async findById(id: string) {
-		const result = await wrapDatabaseOperation(
-			() =>
-				db
-					.select()
-					.from(clients)
-					.where(and(eq(clients.id, id), isNull(clients.deletedAt))),
-			"Failed to fetch client",
-		);
-
-		return result.andThen(([client]) => {
-			if (!client) {
-				return err(new NotFoundError("Client", id));
-			}
-
-			return ok(client);
-		});
 	}
 
 	async exists(id: string) {
@@ -67,10 +61,7 @@ export class ClientRepository implements IClientRepository {
 				db
 					.insert(clients)
 					.values({
-						name: data.name,
-						cellphone: data.cellphone,
-						taxId: data.taxId,
-						storeId: data.storeId,
+						accountId: data.accountId,
 						deletedAt: null,
 					})
 					.returning(),
@@ -78,29 +69,6 @@ export class ClientRepository implements IClientRepository {
 		);
 
 		return result.map(([client]) => client);
-	}
-
-	async update(id: string, data: UpdateClientInput) {
-		const result = await wrapDatabaseOperation(
-			() =>
-				db
-					.update(clients)
-					.set({
-						...data,
-						updatedAt: new Date(),
-					})
-					.where(and(eq(clients.id, id), isNull(clients.deletedAt)))
-					.returning(),
-			"Failed to update client",
-		);
-
-		return result.andThen(([client]) => {
-			if (!client) {
-				return err(new NotFoundError("Client", id));
-			}
-
-			return ok(client);
-		});
 	}
 
 	async delete(id: string) {

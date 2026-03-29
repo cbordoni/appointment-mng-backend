@@ -1,19 +1,17 @@
-import type { Result } from "neverthrow";
-
-import type { DatabaseError, NotFoundError } from "../errors";
 import type { PaginatedResult } from "../types";
+import type { AsyncDomainResult } from "../types/database-result";
 
 // biome-ignore format: to keep the method signatures clear and consistent
 export interface IRepository<T extends { id: unknown }, CreateInput, UpdateInput> {
 	// biome-ignore format: to keep the method signatures clear and consistent
-	findAll(page: number, limit: number, storeId: string): Promise<Result<PaginatedResult<T>, DatabaseError>>;
+	findAll(page: number, limit: number, storeId: string): AsyncDomainResult<PaginatedResult<Partial<T>>>;
 
-	findById(id: string): Promise<Result<T, NotFoundError | DatabaseError>>;
+	findById(id: string): AsyncDomainResult<T>;
 
-	create(data: CreateInput): Promise<Result<T, DatabaseError>>;
+	create(data: CreateInput): AsyncDomainResult<T>;
 
 	// biome-ignore format: to keep the method signatures clear and consistent
-	update(id: T["id"], data: UpdateInput): Promise<Result<T, NotFoundError | DatabaseError>>;
+	update(id: T["id"], data: UpdateInput): AsyncDomainResult<T>;
 
-	delete(id: T["id"]): Promise<Result<void, NotFoundError | DatabaseError>>;
+	delete(id: T["id"]): AsyncDomainResult<void>;
 }

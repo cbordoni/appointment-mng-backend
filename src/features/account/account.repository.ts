@@ -20,7 +20,15 @@ export class AccountRepository implements IAccountRepository {
 
 			const [items, total] = await Promise.all([
 				db
-					.select()
+					.select({
+						id: accounts.id,
+						name: accounts.name,
+						taxId: accounts.taxId,
+						cellphone: accounts.cellphone,
+						storeId: accounts.storeId,
+						createdAt: accounts.createdAt,
+						updatedAt: accounts.updatedAt,
+					})
 					.from(accounts)
 					.where(and(eq(accounts.storeId, storeId), notDeleted))
 					.limit(limit)

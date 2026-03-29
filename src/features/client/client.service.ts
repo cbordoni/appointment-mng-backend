@@ -10,36 +10,27 @@ import { logger } from "@/common/logger";
 import type { PaginatedResponse } from "@/common/types";
 import type { Client } from "@/db/schema";
 
-import type { IStoreRepository } from "../store/store.repository.interface";
-import type { IClientRepository } from "./client.repository.interface";
-import type { CreateClientInput, UpdateClientInput } from "./client.types";
+import type { IAccountRepository } from "../account/account.repository.interface";
+import type {
+	ClientListItem,
+	IClientRepository,
+} from "./client.repository.interface";
+import type { CreateClientInput } from "./client.types";
 
 export class ClientService {
 	constructor(
 		private readonly repository: IClientRepository,
-		private readonly storeRepository: IStoreRepository,
+		private readonly accountRepository: IAccountRepository,
 	) {}
 
-	private validateName(name: string): Result<void, ValidationError> {
-		return name.trim().length === 0
-			? err(new ValidationError("Name cannot be empty"))
-			: ok(undefined);
-	}
-
-	private validateCellphone(cellphone: string): Result<void, ValidationError> {
-		return cellphone.replace(/\D/g, "").length < 10
-			? err(new ValidationError("Invalid cellphone number"))
-			: ok(undefined);
-	}
-
-	private async validateStoreExists(
-		storeId: string,
+	private async validateAccountExists(
+		accountId: string,
 	): Promise<Result<void, ValidationError | DatabaseError>> {
-		const storeExistsResult = await this.storeRepository.exists(storeId);
+		const accountExistsResult = await this.accountRepository.exists(accountId);
 
-		return storeExistsResult.andThen((exists) => {
+		return accountExistsResult.andThen((exists) => {
 			if (!exists) {
-				return err(new ValidationError("Store not found"));
+				return err(new ValidationError("Account not found"));
 			}
 
 			return ok(undefined);
@@ -50,8 +41,8 @@ export class ClientService {
 		page = 1,
 		limit = 10,
 		storeId: string,
-	): Promise<Result<PaginatedResponse<Client>, DatabaseError>> {
-		logger.debug("Fetching all clients", { page, limit, storeId });
+	): Promise<Result<PaginatedResponse<ClientListItem>, DatabaseError>> {
+		logger.debug("Fetching all clients", { page, limit });
 
 		const getResult = await this.repository.findAll(page, limit, storeId);
 
@@ -60,54 +51,28 @@ export class ClientService {
 				count: data.items.length,
 				total: data.total,
 				page,
-				storeId,
 			});
 
 			return toPaginated(data, page, limit);
 		});
 	}
 
-	async getClientById(
-		id: string,
-	): Promise<Result<Client, NotFoundError | DatabaseError>> {
-		logger.debug("Fetching client by id", { id });
-
-		const result = await this.repository.findById(id);
-
-		result.match(
-			() => logger.info("Client fetched successfully", { id }),
-			() => logger.warn("Client not found", { id }),
-		);
-
-		return result;
-	}
-
 	async createClient(
 		data: CreateClientInput,
 	): Promise<Result<Client, ValidationError | DatabaseError>> {
-		logger.debug("Creating client", { name: data.name });
+		logger.debug("Creating client", { accountId: data.accountId });
 
-		const validationResult = this.validateName(data.name)
-			//
-			.andThen(() => this.validateCellphone(data.cellphone));
+		const accountValidationResult = await this.validateAccountExists(
+			data.accountId,
+		);
 
-		if (validationResult.isErr()) {
-			logger.warn("Client creation failed: invalid input", {
-				reason: validationResult.error.message,
+		if (accountValidationResult.isErr()) {
+			logger.warn("Client creation failed: invalid account", {
+				accountId: data.accountId,
+				reason: accountValidationResult.error.message,
 			});
 
-			return err(validationResult.error);
-		}
-
-		const storeValidationResult = await this.validateStoreExists(data.storeId);
-
-		if (storeValidationResult.isErr()) {
-			logger.warn("Client creation failed: invalid store", {
-				storeId: data.storeId,
-				reason: storeValidationResult.error.message,
-			});
-
-			return err(storeValidationResult.error);
+			return err(accountValidationResult.error);
 		}
 
 		const createResult = await this.repository.create(data);
@@ -115,40 +80,9 @@ export class ClientService {
 		return createResult.map((client) => {
 			logger.info("Client created successfully", {
 				id: client.id,
-				name: client.name,
+				accountId: client.accountId,
 			});
 
-			return client;
-		});
-	}
-
-	async updateClient(
-		id: string,
-		data: UpdateClientInput,
-	): Promise<Result<Client, ValidationError | NotFoundError | DatabaseError>> {
-		logger.debug("Updating client", { id, fields: Object.keys(data) });
-
-		const nameValidationResult =
-			data.name !== undefined ? this.validateName(data.name) : ok(undefined);
-
-		const cellphoneValidationResult =
-			data.cellphone !== undefined
-				? this.validateCellphone(data.cellphone)
-				: ok(undefined);
-
-		const validationResult = nameValidationResult
-			// Validate cellphone only if name is valid (if provided)
-			.andThen(() => cellphoneValidationResult);
-
-		if (validationResult.isErr()) {
-			logger.warn("Client update failed: invalid input", { id });
-			return err(validationResult.error);
-		}
-
-		const updateResult = await this.repository.update(id, data);
-
-		return updateResult.map((client) => {
-			logger.info("Client updated successfully", { id });
 			return client;
 		});
 	}

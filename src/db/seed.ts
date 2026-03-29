@@ -1,3 +1,4 @@
+import { sql as drizzleSql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -64,24 +65,15 @@ const storesSeedData: NewStore[] = [
 const clientsSeedData: NewClient[] = [
 	{
 		id: clientIds.joana,
-		name: "Joana Silva",
-		taxId: "12345678900",
-		cellphone: "+55 (11) 98888-1111",
-		storeId: storeIds.matriz,
+		accountId: accountIds.joanaAccount,
 	},
 	{
 		id: clientIds.carlos,
-		name: "Carlos Souza",
-		taxId: "98765432100",
-		cellphone: "+55 (11) 97777-2222",
-		storeId: storeIds.moema,
+		accountId: accountIds.carlosAccount,
 	},
 	{
 		id: clientIds.marina,
-		name: "Marina Lima",
-		taxId: "11223344567",
-		cellphone: "+55 (11) 96666-3333",
-		storeId: storeIds.matriz,
+		accountId: accountIds.marinaAccount,
 	},
 ] as const;
 
@@ -203,6 +195,16 @@ async function seedDatabase(): Promise<void> {
 	const sql = postgres(connectionString);
 	const db = drizzle(sql);
 
+	const clientColumns = await sql<{ column_name: string }[]>`
+		select column_name
+		from information_schema.columns
+		where table_name = 'clients'
+	`;
+
+	const hasAccountIdColumn = clientColumns.some(
+		(column) => column.column_name === "account_id",
+	);
+
 	try {
 		// Hash passwords for accounts
 		const accountsWithHashedPasswords: NewAccount[] = await Promise.all([
@@ -232,6 +234,10 @@ async function seedDatabase(): Promise<void> {
 			},
 		]);
 
+		const accountById = new Map(
+			accountsWithHashedPasswords.map((account) => [account.id, account]),
+		);
+
 		await db.transaction(async (tx) => {
 			await tx.delete(appointmentOverrides);
 			await tx.delete(appointmentExdates);
@@ -242,9 +248,34 @@ async function seedDatabase(): Promise<void> {
 			await tx.delete(stores);
 
 			await tx.insert(stores).values(storesSeedData);
-			await tx.insert(clients).values(clientsSeedData);
-			await tx.insert(professionals).values(professionalsSeedData);
 			await tx.insert(accounts).values(accountsWithHashedPasswords);
+			await tx.insert(professionals).values(professionalsSeedData);
+
+			if (hasAccountIdColumn) {
+				await tx.insert(clients).values(clientsSeedData);
+			} else {
+				for (const client of clientsSeedData) {
+					const account = accountById.get(client.accountId);
+
+					if (
+						!account ||
+						!account.id ||
+						!account.name ||
+						!account.cellphone ||
+						!account.storeId
+					) {
+						continue;
+					}
+
+					await tx.execute(
+						drizzleSql`
+							insert into clients (id, name, tax_id, cellphone, store_id)
+							values (${client.id}, ${account.name}, ${account.taxId}, ${account.cellphone}, ${account.storeId})
+						`,
+					);
+				}
+			}
+
 			await tx.insert(appointments).values(appointmentsSeedData);
 			await tx.insert(appointmentExdates).values(appointmentExdatesSeedData);
 			await tx

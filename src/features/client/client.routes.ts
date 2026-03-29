@@ -2,11 +2,7 @@ import { Elysia } from "elysia";
 
 import { PaginationQuerySchema } from "@/common/types";
 import { controller } from ".";
-import {
-	ClientIdSchema,
-	CreateClientSchema,
-	UpdateClientSchema,
-} from "./client.types";
+import { ClientIdSchema, CreateClientSchema } from "./client.types";
 
 export const clientRoutes = new Elysia({ prefix: "/clients" })
 	.get(
@@ -22,19 +18,6 @@ export const clientRoutes = new Elysia({ prefix: "/clients" })
 			},
 		},
 	)
-	.get(
-		"/:id",
-		async ({ params }) => {
-			return await controller.getById(params.id);
-		},
-		{
-			params: ClientIdSchema,
-			detail: {
-				summary: "Get client by ID",
-				tags: ["Clients"],
-			},
-		},
-	)
 	.post(
 		"/",
 		async ({ body }) => {
@@ -44,20 +27,6 @@ export const clientRoutes = new Elysia({ prefix: "/clients" })
 			body: CreateClientSchema,
 			detail: {
 				summary: "Create a new client",
-				tags: ["Clients"],
-			},
-		},
-	)
-	.patch(
-		"/:id",
-		async ({ params, body }) => {
-			return await controller.update(params.id, body);
-		},
-		{
-			params: ClientIdSchema,
-			body: UpdateClientSchema,
-			detail: {
-				summary: "Update a client",
 				tags: ["Clients"],
 			},
 		},
