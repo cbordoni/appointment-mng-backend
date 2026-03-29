@@ -11,4 +11,5 @@ export type AuthPayload = {
 	accountId: string;
 	taxId: string;
 	name: string;
+	token: string;
 };

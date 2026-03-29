@@ -47,6 +47,9 @@ describe("AuthService", () => {
 				expect(payload.accountId).toBe("account-001");
 				expect(payload.taxId).toBe("12345678901");
 				expect(payload.name).toBe("John Doe");
+				expect(payload.token).toBeDefined();
+				expect(typeof payload.token).toBe("string");
+				expect(payload.token.split(".")).toHaveLength(3); // JWT has 3 parts
 			}
 		});
 

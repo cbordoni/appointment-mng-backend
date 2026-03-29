@@ -32,6 +32,13 @@ export class DatabaseError extends DomainError {
 	}
 }
 
+export class UnauthorizedError extends DomainError {
+	constructor(message: string = "Unauthorized") {
+		super(message, "UNAUTHORIZED");
+		this.name = "UnauthorizedError";
+	}
+}
+
 export class HttpErrorResponse extends Error {
 	constructor(
 		public readonly message: string,

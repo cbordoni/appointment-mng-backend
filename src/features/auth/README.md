@@ -1,33 +1,36 @@
 # Authentication Feature
 
-Responsável pela autenticação de usuários (contas) através de taxId e senha.
+Provides JWT-based session authentication for the API. Authenticates users via taxId and password, issuing JWT tokens for accessing protected routes.
 
-## Responsabilidades
+## Responsibilities
 
-- Autenticar usuários com taxId e senha
-- Validar credenciais contra a base de dados
-- Retornar informações de autenticação bem-sucedida
+- Authenticate users with taxId and password
+- Generate JWT tokens on successful login
+- Validate credentials against the database
+- Return authentication information with JWT token
 
-## Componentes
+## Components
 
-- **Controller**: Mapeia requisições HTTP para a lógica de autenticação
-- **Service**: Orquestra a lógica de autenticação e validações
-- **Repository**: Acessa a base de dados para buscar contas por taxId
-- **Routes**: Define os endpoints HTTP da feature
+- **Controller**: Maps HTTP requests to authentication logic
+- **Service**: Orchestrates authentication logic, JWT generation, and validations
+- **Repository**: Accesses database to find accounts by taxId
+- **Routes**: Defines HTTP endpoints for the feature
+- **JWT Service**: Handles JWT token signing and verification
+- **Auth Middleware**: Protects routes requiring authentication
 
 ## Endpoints
 
-Prefixo: `/auth`
+Prefix: `/auth`
 
 ### POST /auth/login
 
-Autentica um usuário com taxId e senha.
+Authenticates a user with taxId and password, returning a JWT token.
 
 **Body**:
 ```json
 {
-  "taxId": "string (9-15 caracteres)",
-  "password": "string (mínimo 8 caracteres)"
+  "taxId": "string (9-15 characters)",
+  "password": "string (minimum 8 characters)"
 }
 ```
 
@@ -37,7 +40,8 @@ Autentica um usuário com taxId e senha.
   "data": {
     "accountId": "uuid",
     "taxId": "string",
-    "name": "string"
+    "name": "string",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -50,19 +54,61 @@ Autentica um usuário com taxId e senha.
 }
 ```
 
-## Fluxo de Autenticação
+## Authentication Flow
 
-1. Cliente envia POST `/auth/login` com taxId e password
-2. Controller valida o schema de entrada (TypeBox)
-3. Service realiza validações adicionais
-4. Repository busca a conta pelo taxId
-5. Service verifica a senha usando `Bun.password.verify()`
-6. Se bem-sucedido, retorna payload de autenticação (accountId, taxId, name)
-7. Se falha, retorna erro de validação genérico "Invalid credentials"
+1. Client sends POST `/auth/login` with taxId and password
+2. Controller validates the input schema (TypeBox)
+3. Service performs additional validations
+4. Repository finds the account by taxId
+5. Service verifies the password using `Bun.password.verify()`
+6. If successful:
+   - JWT Service generates a token with 7-day expiration
+   - Returns payload with accountId, taxId, name, and token
+7. If failed, returns generic "Invalid credentials" error
 
-## Observações de Segurança
+## Protected Routes
 
-- Senhas nunca são retornadas nas respostas
-- Mensagens de erro genéricas para taxId/senha inválidos (não revela qual campo está errado)
-- Contra-medidas: hash de senha com `Bun.password` (ARGON2ID)
-- A feature não gerencia sessões ou JWT - isso pode ser implementado em um middleware posterior
+All routes except `/auth/login` require a valid JWT token in the `Authorization` header.
+
+### Usage Example
+
+```bash
+# Get token from login
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"taxId": "12345678901", "password": "password123"}'
+
+# Use token to access protected routes
+curl -X GET http://localhost:3000/accounts \
+  -H "Authorization: Bearer <token>"
+```
+
+## JWT Token Details
+
+- **Algorithm**: HS256 (HMAC with SHA-256)
+- **Expiration**: 7 days (604,800 seconds)
+- **Payload**:
+  ```json
+  {
+    "accountId": "string",
+    "taxId": "string",
+    "name": "string",
+    "iat": number,
+    "exp": number
+  }
+  ```
+
+## Security Notes
+
+- Passwords are never returned in responses
+- Generic error messages for invalid taxId/password (doesn't reveal which field is wrong)
+- Password hashing with `Bun.password` (ARGON2ID)
+- JWT tokens signed with configurable secret (JWT_SECRET env var)
+- Default development secret provided for testing (change in production)
+- Token verification on every protected request
+
+## Environment Variables
+
+- `JWT_SECRET` (optional): Secret key for signing tokens
+  - Default: "dev-secret-key-change-in-production"
+  - **Important**: Set this to a strong value in production

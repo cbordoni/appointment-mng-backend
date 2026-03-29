@@ -1,6 +1,7 @@
 import { err, ok, type Result } from "neverthrow";
 
 import { ValidationError } from "@/common/errors";
+import { JWTService } from "@/common/http/jwt.service";
 import { logger } from "@/common/logger";
 import type { Account } from "@/db/schema";
 
@@ -8,6 +9,8 @@ import type { IAuthRepository } from "./auth.repository.interface";
 import type { AuthPayload, LoginInput } from "./auth.types";
 
 export class AuthService {
+	private readonly jwtService = new JWTService();
+
 	constructor(private readonly repository: IAuthRepository) {}
 
 	private validateTaxId(taxId: string): Result<void, ValidationError> {
@@ -29,11 +32,18 @@ export class AuthService {
 		return Bun.password.verify(password, passwordHash);
 	}
 
-	private mapToAuthPayload(account: Account): AuthPayload {
+	private async mapToAuthPayload(account: Account): Promise<AuthPayload> {
+		const token = await this.jwtService.sign({
+			accountId: account.id,
+			taxId: account.taxId || "",
+			name: account.name,
+		});
+
 		return {
 			accountId: account.id,
 			taxId: account.taxId || "",
 			name: account.name,
+			token,
 		};
 	}
 
@@ -73,6 +83,7 @@ export class AuthService {
 
 		logger.debug("Login successful for taxId", { taxId: input.taxId });
 
-		return ok(this.mapToAuthPayload(account));
+		const payload = await this.mapToAuthPayload(account);
+		return ok(payload);
 	}
 }
