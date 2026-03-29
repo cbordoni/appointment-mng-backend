@@ -44,6 +44,7 @@ export class AppointmentProjectionRepository
 						sequence: appointments.sequence,
 						dtstamp: appointments.dtstamp,
 						deletedAt: appointments.deletedAt,
+						storeId: appointments.storeId,
 						clientId: appointments.clientId,
 						professionalId: appointments.professionalId,
 						createdAt: appointments.createdAt,

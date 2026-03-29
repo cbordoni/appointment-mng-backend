@@ -18,29 +18,26 @@ export class AppointmentRepository implements IAppointmentRepository {
 			const offset = (page - 1) * limit;
 			const conditions = and(
 				isNull(appointments.deletedAt),
-				isNull(clients.deletedAt),
-				eq(clients.storeId, storeId),
+				eq(appointments.storeId, storeId),
 			);
 
 			const [items, totalResult] = await Promise.all([
 				db
-					.select({ appointment: appointments })
+					.select()
 					.from(appointments)
-					.innerJoin(clients, eq(appointments.clientId, clients.id))
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
 				db
 					.select({ count: sql<number>`count(*)` })
 					.from(appointments)
-					.innerJoin(clients, eq(appointments.clientId, clients.id))
 					.where(conditions),
 			]);
 
 			const total = Number(totalResult[0]?.count ?? 0);
 
 			return {
-				items: items.map(({ appointment }) => appointment),
+				items,
 				total,
 			};
 		}, "Failed to fetch appointments");
@@ -50,10 +47,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 		return wrapDatabaseOperation(() => {
 			const conditions = [
 				isNull(appointments.deletedAt),
-				isNull(clients.deletedAt),
-				isNull(professionals.deletedAt),
-				eq(clients.storeId, storeId),
-				eq(professionals.storeId, storeId),
+				eq(appointments.storeId, storeId),
 				from ? gte(appointments.dtStart, from) : undefined,
 				to ? lte(appointments.dtStart, to) : undefined,
 			].filter(Boolean) as Parameters<typeof and>;
@@ -67,6 +61,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 					dtStart: appointments.dtStart,
 					dtEnd: appointments.dtEnd,
 					timezone: appointments.timezone,
+					storeId: appointments.storeId,
 					clientId: appointments.clientId,
 					professionalId: appointments.professionalId,
 					rrule: appointments.rrule,
@@ -126,29 +121,26 @@ export class AppointmentRepository implements IAppointmentRepository {
 			const conditions = and(
 				eq(appointments.clientId, clientId),
 				isNull(appointments.deletedAt),
-				isNull(clients.deletedAt),
-				eq(clients.storeId, storeId),
+				eq(appointments.storeId, storeId),
 			);
 
 			const [items, totalResult] = await Promise.all([
 				db
-					.select({ appointment: appointments })
+					.select()
 					.from(appointments)
-					.innerJoin(clients, eq(appointments.clientId, clients.id))
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
 				db
 					.select({ count: sql<number>`count(*)` })
 					.from(appointments)
-					.innerJoin(clients, eq(appointments.clientId, clients.id))
 					.where(conditions),
 			]);
 
 			const total = Number(totalResult[0]?.count ?? 0);
 
 			return {
-				items: items.map(({ appointment }) => appointment),
+				items,
 				total,
 			};
 		}, "Failed to fetch appointments by client");
@@ -166,35 +158,26 @@ export class AppointmentRepository implements IAppointmentRepository {
 			const conditions = and(
 				eq(appointments.professionalId, professionalId),
 				isNull(appointments.deletedAt),
-				isNull(professionals.deletedAt),
-				eq(professionals.storeId, storeId),
+				eq(appointments.storeId, storeId),
 			);
 
 			const [items, totalResult] = await Promise.all([
 				db
-					.select({ appointment: appointments })
+					.select()
 					.from(appointments)
-					.innerJoin(
-						professionals,
-						eq(appointments.professionalId, professionals.id),
-					)
 					.where(conditions)
 					.limit(limit)
 					.offset(offset),
 				db
 					.select({ count: sql<number>`count(*)` })
 					.from(appointments)
-					.innerJoin(
-						professionals,
-						eq(appointments.professionalId, professionals.id),
-					)
 					.where(conditions),
 			]);
 
 			const total = Number(totalResult[0]?.count ?? 0);
 
 			return {
-				items: items.map(({ appointment }) => appointment),
+				items,
 				total,
 			};
 		}, "Failed to fetch appointments by professional");
@@ -220,6 +203,7 @@ export class AppointmentRepository implements IAppointmentRepository {
 					sequence: data.sequence ?? 0,
 					dtstamp: new Date(),
 					deletedAt: null,
+					storeId: data.storeId,
 					clientId: data.clientId,
 					professionalId: data.professionalId,
 				})

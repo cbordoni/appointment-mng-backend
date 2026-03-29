@@ -77,11 +77,15 @@ export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 	)
 	.post(
 		"/",
-		async ({ body }) => {
-			return await controller.create(body);
+		async ({ body, headers }) => {
+			return await controller.create({
+				...body,
+				storeId: headers["x-store-id"],
+			});
 		},
 		{
 			body: CreateAppointmentSchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Create a new appointment",
 				tags: ["Appointments"],

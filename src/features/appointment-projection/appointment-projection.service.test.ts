@@ -44,6 +44,7 @@ const makeAppointment = (
 	sequence: 0,
 	dtstamp: new Date("2026-03-10T09:00:00.000Z"),
 	deletedAt: null,
+	storeId: "00000000-0000-0000-0000-000000000001",
 	clientId: "00000000-0000-0000-0000-000000000001",
 	professionalId: "00000000-0000-0000-0000-000000000010",
 	createdAt: new Date("2026-03-01T00:00:00.000Z"),
@@ -67,9 +68,7 @@ const getRecurringStarts = (
 		.replace(/[-:]/g, "")
 		.replace(".000", "");
 
-	const parsedRule = rrulestr(
-		`DTSTART:${dtStart}\nRRULE:${appointment.rrule}`,
-	);
+	const parsedRule = rrulestr(`DTSTART:${dtStart}\nRRULE:${appointment.rrule}`);
 
 	return parsedRule.between(new Date(fromIso), new Date(toIso), true);
 };

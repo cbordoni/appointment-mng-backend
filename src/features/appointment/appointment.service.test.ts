@@ -45,6 +45,7 @@ const makeAppointment = (
 	summary: "Therapy Session",
 	dtStart: "2026-03-01T10:00:00.000Z",
 	dtEnd: "2026-03-01T11:00:00.000Z",
+	storeId: BASE_STORE_ID,
 	clientId: BASE_CLIENT_ID,
 	professionalId: BASE_PROFESSIONAL_ID,
 	...overrides,
@@ -65,22 +66,10 @@ describe("AppointmentService", () => {
 				[OTHER_CLIENT_ID, "Jane Doe"],
 			]),
 		);
-		repository.setClientStoreMap(
-			new Map([
-				[BASE_CLIENT_ID, BASE_STORE_ID],
-				[OTHER_CLIENT_ID, OTHER_STORE_ID],
-			]),
-		);
 		repository.setProfessionalsMap(
 			new Map([
 				[BASE_PROFESSIONAL_ID, "Dr. Alice Smith"],
 				[OTHER_PROFESSIONAL_ID, "Dr. Bob Stone"],
-			]),
-		);
-		repository.setProfessionalStoreMap(
-			new Map([
-				[BASE_PROFESSIONAL_ID, BASE_STORE_ID],
-				[OTHER_PROFESSIONAL_ID, OTHER_STORE_ID],
 			]),
 		);
 	});
@@ -106,6 +95,7 @@ describe("AppointmentService", () => {
 			await repository.create(
 				makeAppointment({
 					summary: "Other Store Session",
+					storeId: OTHER_STORE_ID,
 					clientId: OTHER_CLIENT_ID,
 					professionalId: OTHER_PROFESSIONAL_ID,
 				}),

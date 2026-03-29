@@ -1,5 +1,5 @@
 {
-  "id": "b9ab0e70-85df-41ea-8eea-7667f52b7376",
+  "id": "631cd39a-e187-4e8e-acc9-c45c7065bf62",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -312,6 +312,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "store_id": {
+          "name": "store_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "client_id": {
           "name": "client_id",
           "type": "uuid",
@@ -341,6 +347,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "appointments_store_id_stores_id_fk": {
+          "name": "appointments_store_id_stores_id_fk",
+          "tableFrom": "appointments",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "appointments_client_id_clients_id_fk": {
           "name": "appointments_client_id_clients_id_fk",
           "tableFrom": "appointments",

@@ -18,9 +18,7 @@ export class MockAppointmentRepository
 	implements IAppointmentRepository
 {
 	private clientsMap = new Map<string, string>();
-	private clientStoreMap = new Map<string, string>();
 	private professionalsMap = new Map<string, string>();
-	private professionalStoreMap = new Map<string, string>();
 
 	protected get entityName(): string {
 		return "Appointment";
@@ -30,23 +28,12 @@ export class MockAppointmentRepository
 		this.clientsMap = map;
 	}
 
-	setClientStoreMap(map: Map<string, string>) {
-		this.clientStoreMap = map;
-	}
-
 	setProfessionalsMap(map: Map<string, string>) {
 		this.professionalsMap = map;
 	}
 
-	setProfessionalStoreMap(map: Map<string, string>) {
-		this.professionalStoreMap = map;
-	}
-
 	private belongsToStore(appointment: Appointment, storeId: string) {
-		return (
-			this.clientStoreMap.get(appointment.clientId) === storeId &&
-			this.professionalStoreMap.get(appointment.professionalId) === storeId
-		);
+		return appointment.storeId === storeId;
 	}
 
 	async findAll(page: number, limit: number, storeId: string) {
@@ -151,6 +138,7 @@ export class MockAppointmentRepository
 			sequence: data.sequence ?? 0,
 			dtstamp: new Date(),
 			deletedAt: null,
+			storeId: data.storeId,
 			clientId: data.clientId,
 			professionalId: data.professionalId,
 			createdAt: new Date(),

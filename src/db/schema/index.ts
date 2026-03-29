@@ -66,6 +66,9 @@ export const appointments = pgTable("appointments", {
 	sequence: integer("sequence").notNull().default(0),
 	dtstamp: timestamp("dtstamp").defaultNow().notNull(),
 	deletedAt: timestamp("deleted_at"),
+	storeId: uuid("store_id")
+		.notNull()
+		.references(() => stores.id, { onDelete: "cascade" }),
 	clientId: uuid("client_id")
 		.notNull()
 		.references(() => clients.id, { onDelete: "cascade" }),

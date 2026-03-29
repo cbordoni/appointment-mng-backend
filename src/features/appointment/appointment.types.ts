@@ -35,6 +35,7 @@ export const CreateAppointmentSchema = t.Object({
 	sequence: t.Optional(t.Number({ minimum: 0 })),
 	clientId: t.String({ format: "uuid" }),
 	professionalId: t.String({ format: "uuid" }),
+	storeId: t.String({ format: "uuid" }),
 });
 
 export const UpdateAppointmentSchema = t.Object({
