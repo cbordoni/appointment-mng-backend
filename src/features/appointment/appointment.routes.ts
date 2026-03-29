@@ -12,11 +12,12 @@ import {
 export const appointmentRoutes = new Elysia({ prefix: "/appointments" })
 	.get(
 		"/",
-		async ({ query }) => {
-			return await controller.getAll(query);
+		async ({ query, headers }) => {
+			return await controller.getAll(query, headers["x-store-id"]);
 		},
 		{
 			query: DateRangeQuerySchema,
+			headers: StoreHeaderSchema,
 			detail: {
 				summary: "Get appointments filtered by date range",
 				tags: ["Appointments"],

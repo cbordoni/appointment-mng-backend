@@ -13,8 +13,8 @@ export class AppointmentController extends BaseController {
 		super();
 	}
 
-	async getAll(query: DateRangeQuery) {
-		const result = await this.service.getAllAppointments(query);
+	async getAll(query: DateRangeQuery, storeId: string) {
+		const result = await this.service.getAllAppointments(storeId, query);
 
 		return result.match((data) => ({ data }), this.handleError);
 	}
