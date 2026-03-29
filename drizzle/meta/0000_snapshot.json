@@ -1,5 +1,5 @@
 {
-  "id": "861b6af9-6e2c-4499-ad47-981c6cde4b0f",
+  "id": "483ced0f-aca3-44a8-bb71-b82905c99838",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -411,6 +411,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "store_id": {
+          "name": "store_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp",
@@ -433,7 +439,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "clients_store_id_stores_id_fk": {
+          "name": "clients_store_id_stores_id_fk",
+          "tableFrom": "clients",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "clients_tax_id_unique": {
@@ -477,6 +497,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "store_id": {
+          "name": "store_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp",
@@ -499,7 +525,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "professionals_store_id_stores_id_fk": {
+          "name": "professionals_store_id_stores_id_fk",
+          "tableFrom": "professionals",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "professionals_tax_id_unique": {
