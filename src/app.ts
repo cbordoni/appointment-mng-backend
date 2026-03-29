@@ -34,6 +34,18 @@ export const app = new Elysia()
 					version,
 					description: "A modern backend API built with Bun and Elysia",
 				},
+				components: {
+					securitySchemes: {
+						bearerAuth: {
+							type: "http",
+							scheme: "bearer",
+							bearerFormat: "JWT",
+							description:
+								"Use the JWT token returned by POST /auth/login in Authorization: Bearer <token>",
+						},
+					},
+				},
+				security: [{ bearerAuth: [] }],
 				tags: [
 					{ name: "Stores", description: "Store management endpoints" },
 					{
@@ -70,6 +82,7 @@ export const app = new Elysia()
 		detail: {
 			summary: "API Root",
 			tags: ["Health"],
+			security: [],
 		},
 	})
 	.use(healthRoutes)

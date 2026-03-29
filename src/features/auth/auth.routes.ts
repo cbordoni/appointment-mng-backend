@@ -14,7 +14,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" }).post(
 			summary: "Authenticate user with taxId and password",
 			tags: ["Authentication"],
 			description:
-				"Authenticates a user by taxId and password, returning account information",
+				"Authenticates a user by taxId and password, returning account information and a JWT token to be used in Authorization: Bearer <token>",
+			security: [],
 		},
 	},
 );
